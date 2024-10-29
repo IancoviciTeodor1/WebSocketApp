@@ -1,4 +1,13 @@
-<!DOCTYPE html>
+<?php
+session_start();
+
+// Check if the user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
+?>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -20,13 +29,7 @@
 </head>
 <body>
     <h1>WebSocket Chat App</h1>
-    <div id="auth">
-        <input type="text" id="usernameInput" placeholder="Enter your username">
-        <input type="password" id="passwordInput" placeholder="Enter your password">
-        <button onclick="register()">Register</button>
-        <button onclick="login()">Login</button>
-    </div>
-    <div id="chat" style="display:none;">
+    <div id="chat">
         <input type="text" id="searchInput" placeholder="Search users">
         <button onclick="searchUsers()">Search</button>
         <div id="userList"></div>
@@ -39,9 +42,9 @@
 
     <script>
         let socket;
-        let token;
-        let username;
-        let userId;
+        let token = localStorage.getItem('token');
+        let username = '<?php echo $_SESSION['username']; ?>';
+        let userId = <?php echo $_SESSION['user_id']; ?>;
         let currentReceiverId;
 
         function register() {
@@ -173,6 +176,8 @@ function sendMessage() {
         alert('Please select a user to send a message to.');
     }
 }
+
+connectWebSocket(username);
 
     </script>
 </body>
