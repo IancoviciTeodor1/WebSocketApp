@@ -2,6 +2,12 @@
 session_start();
 require 'db.php'; // Include your database connection file
 
+// Check if the user is logged in
+if (isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit();
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $_POST['username'];
     $password = $_POST['password'];
@@ -69,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             font-size: 16px;
             max-width: 300px;
         }
-        p, a {
+        #signup {
             font-size: 14px;
         }
         .error {
@@ -86,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <input type="text" name="username" placeholder="Username" required>
         <input type="password" name="password" placeholder="Password" required>
         <button type="submit">Login</button>
-        <p>Don't have an account? <a href="register.php">Sign up</a></p>
+        <p id="signup">Don't have an account? <a href="register.php">Sign up</a></p>
     </form>
 </body>
 </html>

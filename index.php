@@ -6,6 +6,13 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
+
+// Handle logout
+if (isset($_POST['logout'])) {
+    session_destroy();
+    header("Location: login.php");
+    exit();
+}
 ?>
 
 <html lang="en">
@@ -14,6 +21,9 @@ if (!isset($_SESSION['user_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebSocket Chat App</title>
     <style>
+        button {
+            cursor: pointer;
+        }
         #userList div {
             border: 1px solid #000;
             padding: 10px;
@@ -25,10 +35,42 @@ if (!isset($_SESSION['user_id'])) {
             color: #fff;
             cursor: pointer;
         }
+        body {
+            font-family: Arial, sans-serif;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #f0f0f0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        header h1 {
+            margin: 0;
+        }
+        .logout-form button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #ff4c4c;
+            color: white;
+        }
+        .logout-form button:hover {
+            background-color: #ff3333;
+        }
+        #chat {
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
-    <h1>WebSocket Chat App</h1>
+    <header>
+        <h1>WebSocket Chat App</h1>
+        <form class="logout-form" method="POST" action="">
+            <button type="submit" name="logout">Logout</button>
+        </form>
+    </header>
     <div id="chat">
         <input type="text" id="searchInput" placeholder="Search users">
         <button onclick="searchUsers()">Search</button>
