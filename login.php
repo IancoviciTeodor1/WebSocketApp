@@ -1,6 +1,6 @@
 <?php
 session_start();
-require 'db.php'; // Include your database connection file
+require 'db.php'; // Include the database connection file
 
 // Check if the user is logged in
 if (isset($_SESSION['user_id'])) {

@@ -15,8 +15,8 @@ CREATE TABLE messages (
     receiverId INT,
     content TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (senderId) REFERENCES users(id),
-    FOREIGN KEY (receiverId) REFERENCES users(id)
+    FOREIGN KEY (conversationId) REFERENCES conversations(id),
+    FOREIGN KEY (senderId) REFERENCES users(id)
 );
 
 CREATE TABLE contacts (
@@ -54,3 +54,11 @@ CHANGE COLUMN subject name VARCHAR(255);
 
 ALTER TABLE conversations
 ADD COLUMN type ENUM('one-on-one', 'group') NOT NULL;
+
+
+ALTER TABLE messages
+DROP COLUMN receiverId;
+
+ALTER TABLE messages
+ADD COLUMN conversationId INT,
+ADD FOREIGN KEY (conversationId) REFERENCES conversations(id);

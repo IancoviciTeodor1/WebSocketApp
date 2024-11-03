@@ -83,144 +83,147 @@ if (isset($_POST['logout'])) {
     </div>
 
     <script>
-        let socket;
-        let token = localStorage.getItem('token');
-        let username = '<?php echo $_SESSION['username']; ?>';
-        let userId = <?php echo $_SESSION['user_id']; ?>;
-        let currentReceiverId;
+    let socket;
+    let token = localStorage.getItem('token');
+    let username = '<?php echo $_SESSION['username']; ?>';
+    let userId = <?php echo $_SESSION['user_id']; ?>;
+    let currentConversationId;
+    let currentReceiverId;
 
-        function register() {
-            const usernameInput = document.getElementById('usernameInput').value;
-            const passwordInput = document.getElementById('passwordInput').value;
+    // Function to search users
+    function searchUsers() {
+    const query = document.getElementById('searchInput').value;
+    fetch(`http://localhost:3000/search?q=${query}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(response => {
+        console.log('Raw response:', response);
+        return response.json();
+    })
+    .then(users => {
+        const userList = document.getElementById('userList');
+        userList.innerHTML = '';
+        users.forEach(user => {
+            const userItem = document.createElement('div');
+            userItem.textContent = user.username;
+            userItem.onclick = () => openConversation(user.id); 
+            userList.appendChild(userItem);
+        });
+    })
+    .catch(error => {
+        console.error('Search failed:', error);
+        alert('Search failed: ' + error.message);
+    });
+}
 
-            if (!usernameInput || !passwordInput) {
-                alert('Please enter both username and password');
-                return;
+    // Function to open or create a conversation
+    function openConversation(receiverId) {
+        currentReceiverId = receiverId;
+        document.getElementById('conversation').style.display = 'block';
+
+        fetch(`http://localhost:3000/conversations?userId1=${userId}&userId2=${receiverId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.conversationId) {
+                // Conversation exists
+                currentConversationId = data.conversationId;
+                loadMessages(currentConversationId);
+            } else {
+                // Conversation does not exist, create it
+                createConversation(receiverId);
             }
-
-            fetch('http://localhost:3000/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: usernameInput, password: passwordInput })
-            }).then(response => response.text().then(text => {
-                if (response.ok) {
-                    alert('Registration successful');
-                } else {
-                    alert('Registration failed: ' + text);
-                }
-            })).catch(error => {
-                alert('Registration failed: ' + error.message);
-            });
-        }
-
-        function login() {
-    const usernameInput = document.getElementById('usernameInput').value;
-    const passwordInput = document.getElementById('passwordInput').value;
-
-    if (!usernameInput || !passwordInput) {
-        alert('Please enter both username and password');
-        return;
+        })
+        .catch(error => {
+            console.error('Failed to load conversation:', error);
+            alert('Failed to load conversation: ' + error.message);
+        });
     }
 
-    fetch('http://localhost:3000/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: usernameInput, password: passwordInput })
-    }).then(response => response.json().then(data => {
-        if (data.token) {
-            token = data.token;
-            username = usernameInput;
-            userId = data.id; // Se asigură că 'id' este returnat de server
-            console.log('User ID:', userId); // Log pentru verificare
-            localStorage.setItem('token', token);
-            document.getElementById('auth').style.display = 'none';
-            document.getElementById('chat').style.display = 'block';
-            connectWebSocket(username);
-        } else {
-            alert('Login failed');
-        }
-    })).catch(error => {
-        alert('Login failed: ' + error.message);
-    });
-}
+    // Function to create a new conversation
+    function createConversation(receiverId) {
+        fetch('http://localhost:3000/conversations', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ participants: [userId, receiverId], type: 'one-on-one' })
+        })
+        .then(response => response.json())
+        .then(data => {
+            currentConversationId = data.conversationId;
+            loadMessages(currentConversationId);
+        })
+        .catch(error => {
+            console.error('Failed to create conversation:', error);
+            alert('Failed to create conversation: ' + error.message);
+        });
+    }
 
-function openConversation(receiverId) {
-    currentReceiverId = receiverId; 
-    document.getElementById('conversation').style.display = 'block'; 
-    fetch(`http://localhost:3000/messages?senderId=${userId}&receiverId=${receiverId}`, { 
-        headers: { 'Authorization': `Bearer ${token}` } 
-    }).then(response => response.json().then(messages => { 
-        const messagesDiv = document.getElementById('messages'); 
-        messagesDiv.innerHTML = ''; 
-        messages.forEach(message => { 
-            displayMessage(message); 
-        }); 
-    })).catch(error => { 
-        alert('Failed to load messages: ' + error.message); 
-    });
-}
-
-        function searchUsers() {
-            const query = document.getElementById('searchInput').value;
-            fetch(`http://localhost:3000/search?q=${query}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            }).then(response => response.json().then(users => {
-                const userList = document.getElementById('userList');
-                userList.innerHTML = '';
-                users.forEach(user => {
-                    const userItem = document.createElement('div');
-                    userItem.textContent = user.username;
-                    userItem.onclick = () => openConversation(user.id); // Ensure user.id is passed correctly
-                    userList.appendChild(userItem);
-                });
-            })).catch(error => {
-                alert('Search failed: ' + error.message);
+    // Function to load messages of a conversation
+    function loadMessages(conversationId) {
+        fetch(`http://localhost:3000/messages?conversationId=${conversationId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(response => response.json())
+        .then(messages => {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = '';
+            messages.forEach(message => {
+                displayMessage(message);
             });
-        }
+        })
+        .catch(error => {
+            console.error('Failed to load messages:', error);
+            alert('Failed to load messages: ' + error.message);
+        });
+    }
 
+    // Function to display a message
+    function displayMessage(message) {
+        const messagesDiv = document.getElementById('messages');
+        const messageItem = document.createElement('p');
+        messageItem.textContent = `${message.username || 'Unknown'}: ${message.content || ''}`;
+        messagesDiv.appendChild(messageItem);
+    }
 
-        function connectWebSocket(username) {
-    socket = new WebSocket('ws://localhost:8081');
-
-    socket.onopen = () => {
-        console.log('Connected to server');
-    };
-
-    socket.onmessage = event => {
-        const message = JSON.parse(event.data);
-        displayMessage(message);
-    };
-
-    socket.onclose = () => {
-        console.log('Disconnected from server');
-    };
-}
-
-function displayMessage(message) {
-    const messagesDiv = document.getElementById('messages');
-    const messageItem = document.createElement('p');
-    messageItem.textContent = `${message.username || 'Unknown'}: ${message.content || ''}`;
-    messagesDiv.appendChild(messageItem);
-}
-
-function sendMessage() {
-    const message = document.getElementById('messageInput').value;
-    if (message && currentReceiverId) {  // Check if currentReceiverId is set
-        const messageData = {
-            username: username,
-            content: message,
-            senderId: userId,
-            receiverId: currentReceiverId
+    // Function to connect WebSocket
+    function connectWebSocket(username) {
+        socket = new WebSocket('ws://localhost:8081');
+        socket.onopen = () => {
+            console.log('Connected to server');
         };
-        socket.send(JSON.stringify(messageData));
-        document.getElementById('messageInput').value = '';
-    } else {
-        alert('Please select a user to send a message to.');
+        socket.onmessage = event => {
+            const message = JSON.parse(event.data);
+            displayMessage(message);
+        };
+        socket.onclose = () => {
+            console.log('Disconnected from server');
+        };
     }
-}
 
-connectWebSocket(username);
+    // Function to send a message
+    function sendMessage() {
+        const message = document.getElementById('messageInput').value;
+        if (message && currentReceiverId) {
+            const messageData = {
+                username: username,
+                content: message,
+                senderId: userId,
+                conversationId: currentConversationId
+            };
+            socket.send(JSON.stringify(messageData));
+            document.getElementById('messageInput').value = '';
+        } else {
+            alert('Please select a user to send a message to.');
+        }
+    }
 
-    </script>
+    // Connect WebSocket on page load
+    connectWebSocket(username);
+</script>
+
 </body>
 </html>
