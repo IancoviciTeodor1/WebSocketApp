@@ -14,9 +14,34 @@ const server = new WebSocket.Server({ port: 8081 });
 const messages = [];
 
 const secret = crypto.randomBytes(64).toString('hex');
+const SECRET_KEY = 'secretkey'; // Definește cheia ta secretă constantă pentru JWT
+
+// Middleware pentru autentificare cu token JWT
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    //console.log('Token primit:', token);
+    
+    if (!token) {
+        console.log('Unauthorized request: Missing token');
+        return res.sendStatus(403); // Forbidden
+    }
+
+    jwt.verify(token, SECRET_KEY, (err, user) => { // Folosește aceeași cheie secretă ca la generare
+        if (err) {
+            console.log('Unauthorized request: Invalid token');
+            return res.sendStatus(403); // Forbidden
+        }
+        req.user = user; // Salvează informațiile decodate în obiectul req
+        next();
+    });
+}
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost', // Adjust this to match your frontend's address
+    credentials: true
+}));
 app.use(cookieParser());
 app.use(session({
     secret: secret,
@@ -62,27 +87,23 @@ initializeDatabase().then(connection => {
             res.status(400).send('Invalid credentials');
         }
     });
-
-    const authenticateToken = (req, res, next) => {
-        const token = req.headers['authorization'] && req.headers['authorization'].split(' ')[1];
-        if (!token) return res.sendStatus(401);
-        
-        jwt.verify(token, 'secretkey', (err, user) => {
-            if (err) return res.sendStatus(403);
-            req.user = user;
-            next();
-        });
-    };
-    
-    // Apply middleware to routes
+ 
     app.get('/search', authenticateToken, async (req, res) => {
-        const query = req.query.q;
+        const authHeader = req.headers['authorization'];
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            console.log('Unauthorized request: Missing or invalid token');
+            return res.sendStatus(403); // Forbidden
+        }
+    
+        const token = authHeader.split(' ')[1];
         try {
+            const decoded = jwt.verify(token, SECRET_KEY); // Folosește `SECRET_KEY` aici
+            const query = req.query.q;
             const [rows] = await db.execute('SELECT id, username FROM users WHERE username LIKE ?', [`%${query}%`]);
             res.json(rows);
         } catch (error) {
-            console.error('Error searching users:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            console.log('Unauthorized request: Invalid token');
+            res.sendStatus(403);
         }
     });
     

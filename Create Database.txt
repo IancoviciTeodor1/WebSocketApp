@@ -9,16 +9,6 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL UNIQUE
 );
 
-CREATE TABLE messages (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    senderId INT,
-    receiverId INT,
-    content TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (conversationId) REFERENCES conversations(id),
-    FOREIGN KEY (senderId) REFERENCES users(id)
-);
-
 CREATE TABLE contacts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     userId INT,
@@ -30,7 +20,7 @@ CREATE TABLE contacts (
 CREATE TABLE conversations (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255),
-    type ENUM('one-on-one', 'group') NOT NULL
+    type ENUM('one-on-one', 'group', 'self') NOT NULL
 );
 
 CREATE TABLE participants (
@@ -39,6 +29,16 @@ CREATE TABLE participants (
     userId INT,
     FOREIGN KEY (conversationId) REFERENCES conversations(id),
     FOREIGN KEY (userId) REFERENCES users(id)
+);
+
+CREATE TABLE messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    senderId INT,
+    conversationId INT,
+    content TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (conversationId) REFERENCES conversations(id),
+    FOREIGN KEY (senderId) REFERENCES users(id)
 );
 
 
@@ -62,3 +62,6 @@ DROP COLUMN receiverId;
 ALTER TABLE messages
 ADD COLUMN conversationId INT,
 ADD FOREIGN KEY (conversationId) REFERENCES conversations(id);
+
+ALTER TABLE conversations 
+MODIFY COLUMN type ENUM('one-on-one', 'group', 'self') NOT NULL;

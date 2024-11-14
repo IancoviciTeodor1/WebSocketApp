@@ -1,32 +1,45 @@
 <?php
 session_start();
-require 'db.php'; // Include the database connection file
+require 'db.php';
+require 'vendor/autoload.php';
 
-// Check if the user is logged in
-if (isset($_SESSION['user_id'])) {
-    header("Location: index.php");
-    exit();
-}
+use Firebase\JWT\JWT;
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+    // Obține conținutul JSON trimis prin fetch
+    $json = file_get_contents('php://input');
+    $data = json_decode($json, true);
 
-    // Query the database for the user
+    $username = $data['username'];
+    $password = $data['password'];
+
+    // Verificare utilizator în baza de date
     $stmt = $db->prepare('SELECT * FROM users WHERE username = ?');
     $stmt->execute([$username]);
     $user = $stmt->fetch();
 
     if ($user && password_verify($password, $user['password'])) {
-        // Set the session variables
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
 
-        // Redirect to the main page
-        header('Location: index.php');
+        $secretKey = 'secretkey';
+        $payload = [
+            'user_id' => $user['id'],
+            'username' => $user['username'],
+            'exp' => time() + 3600
+        ];
+
+        $token = JWT::encode($payload, $secretKey, 'HS256');
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'token' => $token,
+            'userId' => $user['id']  // Include `userId` în răspuns
+        ]);
         exit();
     } else {
-        $error = 'Invalid username or password';
+        echo json_encode(['error' => 'Invalid username or password']);
+        exit();
     }
 }
 ?>
@@ -94,5 +107,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <button type="submit">Login</button>
         <p id="signup">Don't have an account? <a href="register.php">Sign up</a></p>
     </form>
+
+    <script>
+    document.querySelector('.login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const data = {
+            username: formData.get('username'),
+            password: formData.get('password')
+        };
+        
+        const response = await fetch('login.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.token) {
+            // Stochează tokenul în localStorage
+            localStorage.setItem('token', result.token);
+            localStorage.setItem('userId', result.userId); // Salvează userId
+            window.location.href = 'index.php'; // Redirecționează la pagina principală
+        } else {
+            alert(result.error || 'Authentication failed');
+        }
+    });
+    </script>
+
 </body>
 </html>
