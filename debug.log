@@ -1,0 +1,416 @@
+Array
+(
+    [content] => hi
+    [conversationId] => 15
+    [receiverId] => 6
+)
+Array
+(
+    [content] => hi
+    [conversationId] => 15
+)
+{
+    "data_sent": {
+        "content": "hi",
+        "conversationId": 15
+    },
+    "final_response": null
+}Unexpected output: <br />
+<b>Warning</b>:  Undefined variable $response in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>29</b><br />
+Array
+(
+    [content] => ji
+    [conversationId] => 3
+    [receiverId] => 1
+)
+{
+    "data_sent": {
+        "content": "ji",
+        "conversationId": 3,
+        "receiverId": 1
+    },
+    "final_response": null
+}Unexpected output: <br />
+<b>Warning</b>:  Undefined variable $response in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>29</b><br />
+Array
+(
+    [content] => hi
+    [conversationId] => 17
+    [receiverId] => 4
+)
+{
+    "data_sent": {
+        "content": "hi",
+        "conversationId": 17,
+        "receiverId": 4
+    },
+    "final_response": null
+}Unexpected output: <br />
+<b>Warning</b>:  Undefined variable $response in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>29</b><br />
+Array
+(
+    [content] => h
+    [conversationId] => 15
+)
+{
+    "data_sent": {
+        "content": "h",
+        "conversationId": 15
+    },
+    "final_response": null
+}Unexpected output: <br />
+<b>Warning</b>:  Undefined variable $response in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>30</b><br />
+Array
+(
+    [content] => h
+    [conversationId] => 15
+)
+{
+    "data_sent": {
+        "content": "h",
+        "conversationId": 15
+    },
+    "final_response": null
+}Unexpected output: <br />
+<b>Warning</b>:  Undefined variable $response in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>30</b><br />
+Array
+(
+    [content] => hi
+    [conversationId] => 15
+)
+{
+    "data_sent": {
+        "content": "hi",
+        "conversationId": 15
+    },
+    "final_response": null
+}Unexpected output: <br />
+<b>Warning</b>:  Undefined variable $response in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>31</b><br />
+Array
+(
+    [content] => hi
+    [conversationId] => 15
+)
+Unexpected output: <br />
+<b>Warning</b>:  Undefined global variable $_SESSION in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+<br />
+<b>Warning</b>:  Trying to access array offset on value of type null in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+{"success":true,"message":"Message sent successfully"}Array
+(
+    [content] => hi
+    [conversationId] => 7
+)
+Unexpected output: <br />
+<b>Warning</b>:  Undefined global variable $_SESSION in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+<br />
+<b>Warning</b>:  Trying to access array offset on value of type null in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+{"success":true,"message":"Message sent successfully"}Array
+(
+    [content] => hmmmm
+    [conversationId] => 15
+)
+Unexpected output: <br />
+<b>Warning</b>:  Undefined global variable $_SESSION in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+<br />
+<b>Warning</b>:  Trying to access array offset on value of type null in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+{"success":true,"message":"Message sent successfully"}Array
+(
+    [content] => hmmmm
+    [conversationId] => 15
+    [receiverId] => 6
+)
+Unexpected output: <br />
+<b>Warning</b>:  Undefined global variable $_SESSION in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+<br />
+<b>Warning</b>:  Trying to access array offset on value of type null in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+{"success":true,"message":"Message sent successfully"}Array
+(
+    [content] => lol
+    [conversationId] => 3
+)
+Unexpected output: <br />
+<b>Warning</b>:  Undefined global variable $_SESSION in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+<br />
+<b>Warning</b>:  Trying to access array offset on value of type null in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+{"success":true,"message":"Message sent successfully"}Array
+(
+    [content] => hi
+    [conversationId] => 3
+)
+Unexpected output: <br />
+<b>Warning</b>:  Undefined global variable $_SESSION in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+<br />
+<b>Warning</b>:  Trying to access array offset on value of type null in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+{"success":true,"message":"Message sent successfully"}Array
+(
+    [content] => hi
+    [conversationId] => 15
+    [receiverId] => 6
+)
+Unexpected output: <br />
+<b>Warning</b>:  Undefined global variable $_SESSION in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+<br />
+<b>Warning</b>:  Trying to access array offset on value of type null in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+{"success":true,"message":"Message sent successfully"}Array
+(
+    [content] => hi
+    [conversationId] => 15
+    [receiverId] => 6
+)
+Unexpected output: <br />
+<b>Warning</b>:  Undefined global variable $_SESSION in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+<br />
+<b>Warning</b>:  Trying to access array offset on value of type null in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+{"success":true,"message":"Message sent successfully"}Array
+(
+    [content] => hello
+    [conversationId] => 15
+    [receiverId] => 6
+    [senderId] => 1
+)
+Unexpected output: <br />
+<b>Warning</b>:  Undefined global variable $_SESSION in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+<br />
+<b>Warning</b>:  Trying to access array offset on value of type null in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+{"success":true,"message":"Message sent successfully"}Array
+(
+    [content] => 1234
+    [conversationId] => 15
+    [receiverId] => 6
+    [senderId] => 1
+)
+Error inserting message: SQLSTATE[HY000] [1045] Access denied for user 'your_username'@'localhost' (using password: YES)Unexpected output: {"error":"Failed to send message."}Array
+(
+    [content] => hi
+    [conversationId] => 15
+    [senderId] => 1
+)
+Unexpected output: <br />
+<b>Warning</b>:  Undefined global variable $_SESSION in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+<br />
+<b>Warning</b>:  Trying to access array offset on value of type null in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+{"success":true,"message":"Message sent successfully"}Array
+(
+    [content] => hi
+    [conversationId] => 15
+    [senderId] => 1
+)
+Error inserting message: SQLSTATE[HY000] [1045] Access denied for user 'your_username'@'localhost' (using password: YES)Unexpected output: {"error":"Failed to send message."}Array
+(
+    [content] => hi
+    [conversationId] => 15
+    [senderId] => 1
+)
+Unexpected output: <br />
+<b>Warning</b>:  Undefined global variable $_SESSION in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+<br />
+<b>Warning</b>:  Trying to access array offset on value of type null in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+{"success":true,"message":"Message sent successfully"}Array
+(
+    [content] => g
+    [conversationId] => 15
+    [senderId] => 1
+)
+Error inserting message: SQLSTATE[HY000] [1045] Access denied for user 'your_username'@'localhost' (using password: YES)Unexpected output: {"error":"Failed to send message."}Array
+(
+    [content] => jk
+    [conversationId] => 15
+    [senderId] => 1
+)
+Array
+(
+    [content] => jk
+    [conversationId] => 15
+    [senderId] => 1
+)
+Array
+(
+    [content] => jk
+    [conversationId] => 15
+    [senderId] => 1
+)
+Array
+(
+    [content] => h
+    [conversationId] => 15
+    [senderId] => 1
+)
+Array
+(
+    [content] => h
+    [conversationId] => 15
+    [senderId] => 1
+)
+Array
+(
+    [content] => h
+    [conversationId] => 15
+    [senderId] => 1
+)
+Unexpected output: <br />
+<b>Warning</b>:  Undefined global variable $_SESSION in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+<br />
+<b>Warning</b>:  Trying to access array offset on value of type null in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+{"success":true,"message":"Message sent successfully"}Array
+(
+    [content] => h
+    [conversationId] => 15
+    [senderId] => 1
+)
+Unexpected output: <br />
+<b>Warning</b>:  Undefined global variable $_SESSION in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+<br />
+<b>Warning</b>:  Trying to access array offset on value of type null in <b>D:\xampp\htdocs\WebSocketApp\send_message.php</b> on line <b>39</b><br />
+{"success":true,"message":"Message sent successfully"}Payload received: Array
+(
+    [content] => hi
+    [conversationId] => 15
+    [receiverId] => 
+    [senderId] => 1
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":15}Payload received: Array
+(
+    [content] => nice?
+    [conversationId] => 15
+    [receiverId] => 
+    [senderId] => 1
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":15}Payload received: Array
+(
+    [content] => lol
+    [conversationId] => 3
+    [receiverId] => 
+    [senderId] => 1
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":3}Payload received: Array
+(
+    [content] => hmm
+    [conversationId] => 3
+    [receiverId] => 
+    [senderId] => 1
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":3}Payload received: Array
+(
+    [content] => lol
+    [conversationId] => 15
+    [senderId] => 1
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":15}Payload received: Array
+(
+    [content] => ok
+    [conversationId] => 3
+    [receiverId] => 
+    [senderId] => 1
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":3}Payload received: Array
+(
+    [content] => test1
+    [conversationId] => 15
+    [receiverId] => 
+    [senderId] => 1
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":15}Payload received: Array
+(
+    [content] => hmm
+    [conversationId] => 1
+    [receiverId] => 
+    [senderId] => 1
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":1}Payload received: Array
+(
+    [content] => try
+    [conversationId] => 17
+    [receiverId] => 
+    [senderId] => 4
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":17}Payload received: Array
+(
+    [content] => 2 - 1
+    [conversationId] => 18
+    [receiverId] => 
+    [senderId] => 4
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":"18"}Payload received: Array
+(
+    [content] => 3 - 2
+    [conversationId] => 9
+    [receiverId] => 
+    [senderId] => 4
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":9}Payload received: Array
+(
+    [content] => hi 2
+    [conversationId] => 9
+    [receiverId] => 
+    [senderId] => 5
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":9}Payload received: Array
+(
+    [content] => ok
+    [conversationId] => 9
+    [receiverId] => 
+    [senderId] => 5
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":9}Payload received: Array
+(
+    [content] => 4 - 1
+    [conversationId] => 11
+    [receiverId] => 
+    [senderId] => 6
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":"11"}Payload received: Array
+(
+    [content] => hi
+    [conversationId] => 11
+    [receiverId] => 
+    [senderId] => 6
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":11}Payload received: Array
+(
+    [content] => hi
+    [conversationId] => 11
+    [receiverId] => 
+    [senderId] => 3
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":11}Payload received: Array
+(
+    [content] => 1234
+    [conversationId] => 2
+    [receiverId] => 
+    [senderId] => 3
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":2}Payload received: Array
+(
+    [content] => hi
+    [conversationId] => 8
+    [receiverId] => 
+    [senderId] => 3
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":8}Payload received: Array
+(
+    [content] => hi
+    [conversationId] => 2
+    [receiverId] => 
+    [senderId] => 1
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":2}Payload received: Array
+(
+    [content] => lol
+    [conversationId] => 2
+    [receiverId] => 
+    [senderId] => 1
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":2}Payload received: Array
+(
+    [content] => hi
+    [conversationId] => 
+    [senderId] => 1
+)
+Payload received: Array
+(
+    [content] => hello
+    [conversationId] => 12
+    [receiverId] => 
+    [senderId] => 4
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":"12"}

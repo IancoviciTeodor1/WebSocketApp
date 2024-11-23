@@ -30,6 +30,8 @@ function authenticateToken($token) {
     }
 }
 
+// Înainte de a genera JavaScript-ul
+$currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit username-ul utilizatorului conectat
 ?>
 
 <html lang="en">
@@ -45,7 +47,7 @@ function authenticateToken($token) {
             border: 1px solid #000;
             padding: 10px;
             margin: 5px 0;
-            width: 10%;
+            width: 92%;
         }
         #userList div:hover {
             background-color: #00f;
@@ -54,6 +56,11 @@ function authenticateToken($token) {
         }
         body {
             font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
         header {
             display: flex;
@@ -76,312 +83,525 @@ function authenticateToken($token) {
         .logout-form button:hover {
             background-color: #ff3333;
         }
-        #chat {
+        #content {
+            display: flex;
+            flex: 1;
+        }
+        #sidebar {
+            width: 30%;
+            max-width: 300px;
+            border-right: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        #main {
+            flex: 1;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        #recentConversations {
+            max-height: 50%;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .conversation-item {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+        .conversation-item:hover {
+            background-color: #f0f0f0;
+        }
+        #userList {
+            max-height: 50%;
+            overflow-y: auto;
+        }
+        #conversation {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        #messages {
+            flex: 1;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            overflow-y: auto;
+        }
+        #messageInput {
+            width: calc(100% - 90px);
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        #sendButton {
+            padding: 10px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        #sendButton:hover {
+            background-color: #45a049;
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>WebSocket Chat App</h1>
+        <h1><a href="index.php" style="text-decoration: none; color: black;">WebSocket Chat App</a></h1>
         <form class="logout-form" method="POST" action="">
             <button type="submit" name="logout">Logout</button>
         </form>
     </header>
-    <div id="chat">
-        <input type="text" id="searchInput" placeholder="Search users">
-        <button onclick="searchUsers()">Search</button>
-        <div id="userList"></div>
-        <div id="conversation" style="display:none;">
-            <input type="text" id="messageInput" placeholder="Type a message">
-            <button onclick="sendMessage()">Send</button>
-            <div id="messages"></div>
+        <div id="content">
+            <!-- Sidebar -->
+            <div id="sidebar">
+                <div id="userSearch">
+                    <input type="text" id="searchInput" placeholder="Search users">
+                    <button onclick="searchUsers()">Search</button>
+                    <div id="userList"></div>
+                </div>
+                <div id="recentConversations">
+                    <h3>Conversații recente</h3>
+                    <div id="conversationList"></div>
+                </div>
+            </div>
+            <!-- Main Chat Area -->
+            <div id="main">
+                <div id="conversation">
+                    <div id="messages"></div>
+                    <div>
+                        <input type="text" id="messageInput" placeholder="Type a message">
+                        <button id="sendButton" onclick="sendMessage()">Send</button>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
 
     <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        window.location.href = 'login.php';
-    }
-});
-</script>
-
-    <script>
-        
-    let socket;
-    let token = localStorage.getItem('token');
-    let username = '<?php echo $_SESSION['username']; ?>';
-    const userId = localStorage.getItem('userId');
-    if (!userId || !token) {
-        alert('Session expired. Please log in again.');
-        window.location.href = 'login.php';
-    }
-    let currentConversationId;
-    let currentReceiverId;
-    console.log('User ID after login:', localStorage.getItem('userId'));
-console.log('Token after login:', localStorage.getItem('token'));
-
-
-    // Function to search users
-    async function searchUsers() {
-        console.log('searchUsers function called'); // Verificăm că funcția este apelată
-        const query = document.getElementById('searchInput').value;
-        const token = localStorage.getItem('token'); // Fetch token each time
-
-        if (!token) {
-            alert('Session expired. Please log in again.');
-            localStorage.removeItem('token');
-            
-            // Trimite o cerere către server pentru a șterge sesiunea
-            await fetch('logout.php').then(() => {
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
                 window.location.href = 'login.php';
-            });
-            return;
+            }
+        });
+    </script>
+
+    <script>
+        let socket;
+        let token = localStorage.getItem('token');
+        let username = '<?php echo $_SESSION['username']; ?>';
+        const userId = localStorage.getItem('userId');
+        if (!userId || !token) {
+            alert('Session expired. Please log in again.');
+            window.location.href = 'login.php';
+        }
+        let currentConversationId;
+        let currentReceiverId;
+        console.log('User ID after login:', localStorage.getItem('userId'));
+        console.log('Token after login:', localStorage.getItem('token'));
+        
+        const currentUsername = <?php echo json_encode($currentUsername); ?>;
+
+        // Function to search users
+        async function searchUsers() {
+            console.log('searchUsers function called'); // Verificăm că funcția este apelată
+            const query = document.getElementById('searchInput').value;
+            const token = localStorage.getItem('token'); // Fetch token each time
+
+            if (!token) {
+                alert('Session expired. Please log in again.');
+                localStorage.removeItem('token');
+                
+                // Trimite o cerere către server pentru a șterge sesiunea
+                await fetch('logout.php').then(() => {
+                    window.location.href = 'login.php';
+                });
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/search?q=' + encodeURIComponent(query), {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const users = await response.json();
+                    console.log('Rezultate căutare:', users); // Afișează rezultatele în consolă
+                    
+                    // Golim și populăm lista de utilizatori
+                    const userList = document.getElementById('userList');
+                    userList.innerHTML = '';
+                    users.forEach(user => {
+                        const userItem = document.createElement('div');
+                        userItem.textContent = user.username;
+                        userItem.onclick = () => openConversation(user.id);
+                        userList.appendChild(userItem);
+                    });
+                } else {
+                    console.error('Eroare la răspuns:', response.status);
+                }
+            } catch (error) {
+                console.error('Request failed:', error);
+            }
         }
 
-        try {
-            const response = await fetch('http://localhost:3000/search?q=' + encodeURIComponent(query), {
+        // Adăugare eveniment pentru butonul de căutare
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('searchButton').addEventListener('click', searchUsers);
+        });
+
+        // Function to open or create a conversation
+        function openConversation(receiverId) {
+            currentReceiverId = receiverId;
+            console.log('Receiver ID set to:', currentReceiverId);
+            document.getElementById('conversation').style.display = 'block';
+
+            // Verificăm dacă există deja conversația
+            fetch(`conversations.php?receiverId=${receiverId}`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json(); // Continuă dacă răspunsul este valid
+                } else if (response.status === 404) {
+                    // Nu există conversația, dar vom crea conversația când trimitem un mesaj
+                    console.log('No conversation found, will create on message send.');
+                    return { conversationId: null }; // Conversația nu există, setăm `conversationId` pe `null`
+                } else {
+                    throw new Error('Failed to open conversation');
+                }
+            })
+            .then(data => {
+                if (data.conversationId) {
+                    currentConversationId = data.conversationId;
+                    console.log(`Conversatie deschisă: ID=${data.conversationId}, Tip=${data.type}`);
+                    loadMessages(currentConversationId);
+                } else {
+                    console.log('Conversation will be created on first message send');
+                    currentConversationId = null; // Setează pe null dacă nu există conversația
+                }
+            })
+            .catch(error => {
+                console.error('Failed to open conversation:', error);
+                alert('Failed to open conversation.');
+            });
+        }
+        function openRecentConversation(conversationId, type = null, participants = null) {
+            currentConversationId = conversationId; // Setăm ID-ul conversației curente
+            document.getElementById('conversation').style.display = 'block';
+
+            // Încarcă mesajele pentru conversația selectată
+            if (conversationId) {
+                console.log(`Loading conversation ID=${conversationId}`);
+                loadMessages(conversationId);
+                return;
+            }
+
+            // Dacă nu există ID-ul conversației, tratăm cazurile diferite
+            if (type === 'one-on-one') {
+                console.log('No existing conversation. Will create when sending a message.');
+                currentConversationId = null; // Conversația va fi creată ulterior
+            } else if (type === 'group') {
+                console.error('Group conversations cannot be created dynamically.');
+                alert('Cannot open this type of conversation.');
+            } else {
+                console.error('Invalid conversation type or ID.');
+                alert('Cannot open this conversation.');
+            }
+        }
+
+
+
+        // Function to create a new conversation
+        function createConversation(receiverId, message, userId) {
+            fetch('conversations.php', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    userId: userId,
+                    receiverId: receiverId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.conversationId) {
+                    currentConversationId = data.conversationId;
+                    sendMessageToConversation(currentConversationId, message, userId);
+                } else {
+                    console.error('Failed to create conversation, conversationId missing');
+                    alert('Failed to create conversation: conversationId not returned from server');
+                }
+            })
+            .catch(error => {
+                console.error('Error creating conversation:', error);
+                alert('Error creating conversation');
+            });
+        }
+
+        function findOrCreateConversation(receiverId, message, userId) {
+            // Verifică mai întâi dacă există conversația
+            const url = `conversations.php?userId=${userId}&receiverId=${receiverId}`;
+
+            fetch(url, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error searching for conversation');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.conversationId) {
+                    // Dacă există conversație, setează `currentConversationId`
+                    currentConversationId = data.conversationId;
+                    sendMessageToConversation(currentConversationId, message, userId);
+                } else {
+                    // Dacă nu există conversație, o creează
+                    createConversation(receiverId, message, userId);
+                }
+            })
+            .catch(error => {
+                console.error('Failed to find or create conversation:', error);
+                alert('Failed to find or create conversation.');
             });
+        }
 
-            if (response.ok) {
-                const users = await response.json();
-                console.log('Rezultate căutare:', users); // Afișează rezultatele în consolă
-                
-                // Golim și populăm lista de utilizatori
-                const userList = document.getElementById('userList');
-                userList.innerHTML = '';
-                users.forEach(user => {
-                    const userItem = document.createElement('div');
-                    userItem.textContent = user.username;
-                    userItem.onclick = () => openConversation(user.id);
-                    userList.appendChild(userItem);
-                });
-            } else {
-                console.error('Eroare la răspuns:', response.status);
+        function sendMessageToConversation(conversationId, message, userId) {
+            if (!conversationId) {
+                console.log("Conversation not found; message cannot be sent.");
+                return;
             }
-        } catch (error) {
-            console.error('Request failed:', error);
+
+            fetch(`messages.php?conversationId=${conversationId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    content: message
+                })
+            })
+            .then(response => {
+                console.log("Raw response:", response);
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    displayMessage(data.message);
+                } else {
+                    console.error('Error in response data:', data.error || 'Unknown error');
+                }
+            })
+            .catch(error => {
+                console.error('Error sending message:', error);
+                alert('Failed to send message: ' + error.message);
+            });
         }
-    }
 
-    // Adăugare eveniment pentru butonul de căutare
-    document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('searchButton').addEventListener('click', searchUsers);
-    });
-
-    // Function to open or create a conversation
-    function openConversation(receiverId) {
-        currentReceiverId = receiverId;
-        document.getElementById('conversation').style.display = 'block';
-
-        // Verificăm dacă există deja conversația
-        fetch(`conversations.php?receiverId=${receiverId}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        })
-        .then(response => {
-            if (response.ok) {
-                return response.json(); // Continuă dacă răspunsul este valid
-            } else if (response.status === 404) {
-                // Nu există conversația, dar vom crea conversația când trimitem un mesaj
-                console.log('No conversation found, will create on message send.');
-                return { conversationId: null }; // Conversația nu există, setăm `conversationId` pe `null`
-            } else {
-                throw new Error('Failed to open conversation');
-            }
-        })
-        .then(data => {
-            if (data.conversationId) {
-                currentConversationId = data.conversationId;
-                loadMessages(currentConversationId);
-            } else {
-                console.log('Conversation will be created on first message send');
-                currentConversationId = null; // Setează pe null dacă nu există conversația
-            }
-        })
-        .catch(error => {
-            console.error('Failed to open conversation:', error);
-            alert('Failed to open conversation.');
-        });
-    }
-
-
-    // Function to create a new conversation
-    function createConversation(receiverId, message, userId) {
-    fetch('conversations.php', {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-            userId: userId,
-            receiverId: receiverId
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.conversationId) {
-            currentConversationId = data.conversationId;
-            sendMessageToConversation(currentConversationId, message, userId);
-        } else {
-            console.error('Failed to create conversation, conversationId missing');
-            alert('Failed to create conversation: conversationId not returned from server');
-        }
-    })
-    .catch(error => {
-        console.error('Error creating conversation:', error);
-        alert('Error creating conversation');
-    });
-}
-
-    function findOrCreateConversation(receiverId, message, userId) {
-    // Verifică mai întâi dacă există conversația
-    const url = `conversations.php?userId=${userId}&receiverId=${receiverId}`;
-
-    fetch(url, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Error searching for conversation');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.conversationId) {
-            // Dacă există conversație, setează `currentConversationId`
-            currentConversationId = data.conversationId;
-            sendMessageToConversation(currentConversationId, message, userId);
-        } else {
-            // Dacă nu există conversație, o creează
-            createConversation(receiverId, message, userId);
-        }
-    })
-    .catch(error => {
-        console.error('Failed to find or create conversation:', error);
-        alert('Failed to find or create conversation.');
-    });
-}
-
-function sendMessageToConversation(conversationId, message, userId) {
-    if (!conversationId) {
-        console.log("Conversation not found; message cannot be sent.");
-        return;
-    }
-
-    fetch(`messages.php?conversationId=${conversationId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-            content: message
-        })
-    })
-    .then(response => {
-        console.log("Raw response:", response);
-        if (!response.ok) {
-            return response.text().then(text => { throw new Error(text); });
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            displayMessage(data.message);
-        } else {
-            console.error('Error in response data:', data.error || 'Unknown error');
-        }
-    })
-    .catch(error => {
-        console.error('Error sending message:', error);
-        alert('Failed to send message: ' + error.message);
-    });
-}
-
-function displayMessage(message) {
-    const messagesDiv = document.getElementById('messages');
-    const messageItem = document.createElement('p');
-    messageItem.textContent = `${message.username || 'Unknown'}: ${message.content || ''}`;
-    messagesDiv.appendChild(messageItem);
-}
-
-    function handleSessionExpiry() {
-    console.log('Redirecting to login page');
-    alert('Session expired. Please log in again.');
-    localStorage.removeItem('token');
-    window.location.href = 'login.php';
-}
-
-
-
-    // Function to load messages of a conversation
-    function loadMessages(conversationId) {
-        fetch(`http://localhost:3000/messages?conversationId=${conversationId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
-        .then(response => response.json())
-        .then(messages => {
+        function displayMessage(message) {
             const messagesDiv = document.getElementById('messages');
-            messagesDiv.innerHTML = '';
-            messages.forEach(message => {
-                displayMessage(message);
+            const messageItem = document.createElement('p');
+            messageItem.textContent = `${message.username || 'Unknown'}: ${message.content || ''}`;
+            messagesDiv.appendChild(messageItem);
+        }
+
+            function handleSessionExpiry() {
+            console.log('Redirecting to login page');
+            alert('Session expired. Please log in again.');
+            localStorage.removeItem('token');
+            window.location.href = 'login.php';
+        }
+
+
+
+        // Function to load messages of a conversation
+        function loadMessages(conversationId) {
+            fetch(`http://localhost:3000/messages?conversationId=${conversationId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(response => response.json())
+            .then(messages => {
+                const messagesDiv = document.getElementById('messages');
+                messagesDiv.innerHTML = '';
+                messages.forEach(message => {
+                    displayMessage(message);
+                });
+            })
+            .catch(error => {
+                console.error('Failed to load messages:', error);
+                alert('Failed to load messages: ' + error.message);
             });
-        })
-        .catch(error => {
-            console.error('Failed to load messages:', error);
-            alert('Failed to load messages: ' + error.message);
+        }
+
+        // Function to connect WebSocket
+        function connectWebSocket(username) {
+            socket = new WebSocket('ws://localhost:8081');
+            socket.onopen = () => {
+                console.log('Connected to server');
+            };
+            socket.onmessage = event => {
+                const message = JSON.parse(event.data);
+                displayMessage(message);
+            };
+            socket.onclose = () => {
+                console.log('Disconnected from server');
+            };
+        }
+
+        // Function to send a message
+        /*function sendMessage() {
+            const message = document.getElementById('messageInput').value;
+            const receiverId = currentReceiverId;
+            const userId = localStorage.getItem('userId');
+            const token = localStorage.getItem('token');
+
+            if (!token || !message || !receiverId) {
+                alert('Message or receiver is missing.');
+                return;
+            }
+
+            // Verifică dacă `currentConversationId` este definit
+            if (!currentConversationId) {
+                findOrCreateConversation(receiverId, message, userId);
+            } else {
+                sendMessageToConversation(currentConversationId, message, userId);
+            }
+        }*/
+        function sendMessage() {
+            const userId = localStorage.getItem('userId');
+            const messageInput = document.getElementById('messageInput');
+            const messageContent = messageInput.value.trim();
+
+            if (!messageContent) {
+                alert('Message content cannot be empty.');
+                return;
+            }
+
+            const payload = {
+                content: messageContent,
+                conversationId: currentConversationId || null, // Pentru conversații existente
+                receiverId: currentConversationId ? null : currentReceiverId, // Doar pentru conversații noi
+                senderId: userId, // ID-ul utilizatorului curent
+            };
+
+            console.log('Payload sent to server:', payload);
+
+            fetch('send_message.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(err => {
+                        console.error('Error response text:', err);
+                        throw new Error(`HTTP Error: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Message sent successfully:', data);
+                messageInput.value = ''; // Golește câmpul de text
+                loadMessages(data.conversationId); // Reîncarcă mesajele
+            })
+            .catch(error => {
+                console.error('Error sending message:', error);
+                alert('Failed to send message.');
+            });
+        }
+
+
+
+        let offset = 0; // Offset pentru paginare
+        const limit = 20; // Număr de conversații per cerere
+        let loading = false; // Indicator pentru a preveni cererile multiple
+        let allLoaded = false; // Indicator dacă toate conversațiile au fost încărcate
+
+        // Funcție pentru a încărca conversațiile recente
+        function loadRecentConversations(offset = 0, limit = 20) {
+            fetch(`recent_conversations.php?offset=${offset}&limit=${limit}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    console.error('HTTP Error:', response.status);
+                    return response.text().then(err => {
+                        throw new Error(`Server Error: ${err}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Received data:', data);
+                if (Array.isArray(data)) {
+                    const recentList = document.getElementById('recentConversations');
+                    recentList.innerHTML = '';
+                    data.forEach(conversation => {
+                console.log('Conversation data:', conversation);
+
+                const conversationItem = document.createElement('div');
+                conversationItem.classList.add('conversation-item');
+
+                // Afișează numele conversației folosind "conversationName"
+                conversationItem.textContent = conversation.conversationName || 'Unnamed conversation';
+
+                // Configurăm acțiunea la click pentru conversație
+                conversationItem.onclick = () =>
+                    openRecentConversation(conversation.conversationId, conversation.conversationType);
+
+                recentList.appendChild(conversationItem);
+            });
+                } else {
+                    console.error('Unexpected data format:', data);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading recent conversations:', error);
+                alert('Failed to load recent conversations.');
+            });
+        }
+
+        console.log(currentUsername);
+
+        // Ascultă evenimentul de scroll pentru a încărca mai multe conversații
+        document.getElementById('recentConversations').addEventListener('scroll', function () {
+            const { scrollTop, scrollHeight, clientHeight } = this;
+            if (scrollTop + clientHeight >= scrollHeight - 10) {
+                loadRecentConversations(); // Încarcă mai multe conversații
+            }
         });
-    }
 
-    // Function to connect WebSocket
-    function connectWebSocket(username) {
-        socket = new WebSocket('ws://localhost:8081');
-        socket.onopen = () => {
-            console.log('Connected to server');
-        };
-        socket.onmessage = event => {
-            const message = JSON.parse(event.data);
-            displayMessage(message);
-        };
-        socket.onclose = () => {
-            console.log('Disconnected from server');
-        };
-    }
+        // Încarcă primele conversații la inițializare
+        loadRecentConversations();
 
-    // Function to send a message
-    function sendMessage() {
-    const message = document.getElementById('messageInput').value;
-    const receiverId = currentReceiverId;
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('token');
 
-    if (!token || !message || !receiverId) {
-        alert('Message or receiver is missing.');
-        return;
-    }
-
-    // Verifică dacă `currentConversationId` este definit
-    if (!currentConversationId) {
-        findOrCreateConversation(receiverId, message, userId);
-    } else {
-        sendMessageToConversation(currentConversationId, message, userId);
-    }
-}
-
-    // Connect WebSocket on page load
-    connectWebSocket(username);
-</script>
+        // Connect WebSocket on page load
+        connectWebSocket(username);
+    </script>
 
 </body>
 </html>
