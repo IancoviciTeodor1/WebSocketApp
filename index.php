@@ -146,15 +146,92 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         #sendButton:hover {
             background-color: #45a049;
         }
+
+        #notificationContainer {
+    position: relative;
+    left: 600px;
+}
+
+#notificationButton {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    position: relative;
+}
+
+#notificationButton::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    background: red;
+    border-radius: 50%;
+    display: none; /* Apare doar când există notificări noi */
+}
+
+#notificationButton.has-notifications::after {
+    display: block;
+}
+/* Ascunde lista de notificări */
+.hidden {
+    display: none;
+}
+
+/* Stilul dropdown-ului */
+#notificationDropdown {
+    position: absolute;
+    top: 50px; /* Ajustează în funcție de poziția butonului */
+    right: 10px; /* Ajustează în funcție de poziția dorită */
+    width: 300px;
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid #ddd;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    border-radius: 8px;
+}
+
+/* Stil pentru fiecare notificare */
+#notificationList > div {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+}
+
+#notificationList > div:hover {
+    background-color: #f0f0f0;
+}
+
+/* Stil pentru textul de notificare */
+#notificationList > div b {
+    display: block;
+    font-size: 14px;
+    color: #333;
+}
+
+
     </style>
 </head>
 <body>
     <header>
-        <h1><a href="index.php" style="text-decoration: none; color: black;">WebSocket Chat App</a></h1>
+        <h1>WebSocket Chat App</h1>
+        <div id="notificationContainer">
+            <!-- Panoul pentru notificări -->
+            <button id="notificationButton">🔔</button>
+            <div id="notificationDropdown" class="hidden">
+                <div id="notificationList"></div>
+            </div>
+        </div>
+
         <form class="logout-form" method="POST" action="">
             <button type="submit" name="logout">Logout</button>
         </form>
     </header>
+
         <div id="content">
             <!-- Sidebar -->
             <div id="sidebar">
@@ -241,7 +318,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                     users.forEach(user => {
                         const userItem = document.createElement('div');
                         userItem.textContent = user.username;
-                        userItem.onclick = () => openConversation(user.id);
+                        userItem.onclick = () => openUserConversation(user.id);
                         userList.appendChild(userItem);
                     });
                 } else {
@@ -258,7 +335,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         });
 
         // Function to open or create a conversation
-        function openConversation(receiverId) {
+        function openUserConversation(receiverId) {
             currentReceiverId = receiverId;
             console.log('Receiver ID set to:', currentReceiverId);
             document.getElementById('conversation').style.display = 'block';
@@ -293,7 +370,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 alert('Failed to open conversation.');
             });
         }
-        function openRecentConversation(conversationId, type = null, participants = null) {
+        function openConversation(conversationId, type = null, participants = null) {
             currentConversationId = conversationId; // Setăm ID-ul conversației curente
             document.getElementById('conversation').style.display = 'block';
 
@@ -571,7 +648,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
                 // Configurăm acțiunea la click pentru conversație
                 conversationItem.onclick = () =>
-                    openRecentConversation(conversation.conversationId, conversation.conversationType);
+                    openConversation(conversation.conversationId, conversation.conversationType);
 
                 recentList.appendChild(conversationItem);
             });
@@ -584,6 +661,111 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 alert('Failed to load recent conversations.');
             });
         }
+
+        let notificationsVisible = false;
+
+    // Funcția pentru a comuta vizibilitatea listei de notificări
+    async function loadNotifications() {
+    try {
+        const response = await fetch('notifications.php', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch notifications');
+        }
+
+        const data = await response.json();
+        const notificationList = document.getElementById('notificationList');
+        notificationList.innerHTML = '';
+
+        if (data.length === 0) {
+            notificationList.innerHTML = '<p>No new notifications</p>';
+            document.getElementById('notificationButton').classList.remove('has-notifications');
+        } else {
+            data.forEach(notification => {
+                const item = document.createElement('div');
+                item.style.padding = '10px';
+                item.style.borderBottom = '1px solid #ddd';
+
+                let notificationContent = '';
+
+                if (notification.conversation_type === 'one-on-one') {
+                    // Notificare pentru conversații individuale
+                    notificationContent = `<b>${notification.sender_name}:</b> ${notification.message_content}`;
+                } else if (notification.conversation_type === 'group') {
+                    // Notificare pentru conversații de grup
+                    notificationContent = `<b>${notification.group_name}<br>${notification.sender_name}:</b> ${notification.message_content}`;
+                }
+
+                item.innerHTML = notificationContent;
+
+                // Adaugă un eveniment de click pentru a deschide conversația
+                item.style.cursor = 'pointer';
+                item.onclick = () => openConversation(notification.conversation_id);
+
+                notificationList.appendChild(item);
+            });
+
+            document.getElementById('notificationButton').classList.add('has-notifications');
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const notificationButton = document.getElementById('notificationButton');
+    const notificationDropdown = document.getElementById('notificationDropdown');
+
+    // Eveniment pentru afișarea/ascunderea notificărilor
+    notificationButton.addEventListener('click', () => {
+        notificationDropdown.classList.toggle('hidden'); // Toggle visibility
+        if (!notificationDropdown.classList.contains('hidden')) {
+            loadNotifications(); // Încarcă notificările doar când dropdown-ul este deschis
+        }
+    });
+
+    // Închide dropdown-ul când se face click în afara lui
+    document.addEventListener('click', (event) => {
+        if (!notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
+            notificationDropdown.classList.add('hidden');
+        }
+    });
+});
+
+
+
+    // Funcția pentru a gestiona acceptarea/refuzarea invitațiilor
+    async function handleInvitation(notificationId, action) {
+        try {
+            const response = await fetch('handle_invitation.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ notificationId, action })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                alert(`Invitation ${action}ed successfully`);
+                loadNotifications(); // Reîncărcăm notificările
+            } else {
+                alert('Failed to handle invitation');
+            }
+        } catch (error) {
+            console.error('Error handling invitation:', error);
+        }
+    }
+
+    // Încarcă notificările periodic
+    setInterval(loadNotifications, 10000);
+    loadNotifications(); // Încarcă notificările imediat ce se încarcă pagina
 
         console.log(currentUsername);
 
