@@ -152,7 +152,7 @@ initializeDatabase().then(connection => {
         const { conversationId } = req.query;
         try {
             const [rows] = await db.execute(
-                `SELECT m.*, u.username FROM messages m
+                `SELECT m.*, u.username, u.profile_picture FROM messages m
                  JOIN users u ON m.senderId = u.id
                  WHERE m.conversationId = ?
                  ORDER BY m.timestamp`,
@@ -162,7 +162,8 @@ initializeDatabase().then(connection => {
             const formattedMessages = rows.map(msg => ({
                 username: msg.username,
                 content: msg.content,
-                timestamp: msg.timestamp
+                timestamp: msg.timestamp,
+                profile_picture: msg.profile_picture || 'default.jpg'
             }));
             res.json(formattedMessages);
         } catch (error) {

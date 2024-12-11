@@ -165,6 +165,36 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         .profile-btn:hover {
             background-color: #27ae60;
         }
+
+        .profile-pic {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 10px;
+            object-fit: cover;
+            border: 1px solid #fff;
+        }
+        .username {
+            font-weight: bold;
+        }
+        .message-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .message-header {
+            display: flex;
+            align-items: center;
+        }
+        .message-body {
+            margin-left: 50px;
+        }
+        .timestamp {
+            font-size: 0.8rem;
+            color: gray;
+            margin-left: 5px;
+        }
     </style>
 </head>
 <body>
@@ -440,8 +470,23 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
         function displayMessage(message) {
             const messagesDiv = document.getElementById('messages');
-            const messageItem = document.createElement('p');
-            messageItem.textContent = `${message.username || 'Unknown'}: ${message.content || ''}`;
+
+            const messageItem = document.createElement('div');
+            messageItem.classList = "message-item";
+
+            messageItem.innerHTML = `
+                <div class="message-header">
+                    <img src="${message.profile_picture}" alt="Profile Picture" class="profile-pic">
+                    <span class="username">${message.username || 'Unknown'}</span>
+                    <div class="timestamp">
+                        ${new Date(message.timestamp).toLocaleString()}
+                    </div>
+                </div>
+                <div class="message-body">
+                    ${message.content || ''}
+                </div>
+            `;
+
             messagesDiv.appendChild(messageItem);
         }
 
