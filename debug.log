@@ -413,4 +413,17 @@ Payload received: Array
     [receiverId] => 
     [senderId] => 4
 )
-Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":"12"}
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":"12"}Payload received: Array
+(
+    [content] => sdfs
+    [conversationId] => 
+    [senderId] => 1
+)
+Payload received: Array
+(
+    [content] => bfgbcv
+    [conversationId] => 1
+    [receiverId] => 
+    [senderId] => 1
+)
+Unexpected output: {"success":true,"message":"Message sent successfully","conversationId":1}

@@ -6,7 +6,8 @@ CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE
+    email VARCHAR(255) NOT NULL UNIQUE,
+    profile_picture VARCHAR(255) DEFAULT NULL
 );
 
 CREATE TABLE contacts (
@@ -65,3 +66,6 @@ ADD FOREIGN KEY (conversationId) REFERENCES conversations(id);
 
 ALTER TABLE conversations 
 MODIFY COLUMN type ENUM('one-on-one', 'group', 'self') NOT NULL;
+
+ALTER TABLE users
+ADD COLUMN profile_picture VARCHAR(255) DEFAULT NULL;

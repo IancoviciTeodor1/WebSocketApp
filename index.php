@@ -146,14 +146,36 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         #sendButton:hover {
             background-color: #45a049;
         }
+
+        #side {
+            display: inline-flex;
+        }
+        .profile-btn {
+            margin-right: 10px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #2ecc71;
+            color: white;
+            white-space: nowrap;
+            align-self: flex-start;
+            text-decoration: none;
+        }
+
+        .profile-btn:hover {
+            background-color: #27ae60;
+        }
     </style>
 </head>
 <body>
     <header>
         <h1><a href="index.php" style="text-decoration: none; color: black;">WebSocket Chat App</a></h1>
-        <form class="logout-form" method="POST" action="">
-            <button type="submit" name="logout">Logout</button>
-        </form>
+        <div id="side">
+            <a href="profile.php" class="profile-btn">Profile</a>
+            <form class="logout-form" method="POST" action="">
+                <button type="submit" name="logout">Logout</button>
+            </form>
+        </div>
     </header>
         <div id="content">
             <!-- Sidebar -->

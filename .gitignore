@@ -1,0 +1,5 @@
+uploads/profile_pics/*.jpg
+uploads/profile_pics/*.jpeg
+uploads/profile_pics/*.png
+
+!uploads/profile_pics/default.jpg
