@@ -35,24 +35,52 @@ try {
         // Dacă există o conversație, doar trimitem mesajul
         $stmt = $db->prepare("INSERT INTO messages (content, conversationId, senderId, timestamp) VALUES (?, ?, ?, NOW())");
         $stmt->execute([$content, $conversationId, $senderId]);
+    
+        // Obține ID-ul mesajului inserat
+        $messageId = $db->lastInsertId();
     } elseif ($receiverId) {
         // Dacă nu există conversație, creăm una nouă
         $stmt = $db->prepare("INSERT INTO conversations (type) VALUES ('one-on-one')");
         $stmt->execute();
         $conversationId = $db->lastInsertId();
-
+    
         // Adaugă participanții în conversație
         $stmt = $db->prepare("INSERT INTO participants (conversationId, userId) VALUES (?, ?), (?, ?)");
         $stmt->execute([$conversationId, $senderId, $conversationId, $receiverId]);
-
+    
         // Inserează mesajul în conversația nouă
         $stmt = $db->prepare("INSERT INTO messages (content, conversationId, senderId, timestamp) VALUES (?, ?, ?, NOW())");
         $stmt->execute([$content, $conversationId, $senderId]);
+    
+        // Obține ID-ul mesajului inserat
+        $messageId = $db->lastInsertId();
     } else {
         http_response_code(400);
         echo json_encode(['error' => 'Conversation ID or Receiver ID is required.']);
         exit;
     }
+    
+    // Obține lista participanților din conversație, excluzând expeditorul
+    $stmt = $db->prepare("SELECT userId FROM participants WHERE conversationId = ? AND userId != ?");
+    $stmt->execute([$conversationId, $senderId]);
+    $participants = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    if (!empty($participants)) {
+        // Pregătește interogarea pentru a adăuga notificările
+        $stmt = $db->prepare("INSERT INTO notifications (userId, type, referenceId, isRead, created_at) VALUES (:userId, 'message', :referenceId, FALSE, NOW())");
+    
+        foreach ($participants as $participantId) {
+            // Inserează o notificare pentru fiecare participant
+            $stmt->execute([
+                ':userId' => $participantId,
+                ':referenceId' => $messageId // Utilizează ID-ul mesajului inserat anterior
+            ]);
+        }
+    }
+    
+    // Log pentru depanare (opțional)
+    file_put_contents('debug.log', "Notifications added for participants: " . implode(', ', $participants) . "\n", FILE_APPEND);
+      
 
     // Răspuns de succes
     echo json_encode(['success' => true, 'message' => 'Message sent successfully', 'conversationId' => $conversationId]);

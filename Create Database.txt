@@ -42,7 +42,27 @@ CREATE TABLE messages (
     FOREIGN KEY (senderId) REFERENCES users(id)
 );
 
+CREATE TABLE notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    userId INT NOT NULL,                  -- ID-ul utilizatorului care primește notificarea
+    type ENUM('message', 'invitation') NOT NULL, -- Tipul notificării: mesaj sau invitație
+    referenceId INT NOT NULL,             -- ID-ul referinței (ID-ul mesajului sau invitației)
+    isRead BOOLEAN DEFAULT FALSE,         -- Dacă notificarea a fost citită
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (userId) REFERENCES users(id)
+);
 
+CREATE TABLE group_invitations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    groupId INT NOT NULL,                 -- ID-ul grupului pentru care este invitația
+    senderId INT NOT NULL,                -- ID-ul utilizatorului care trimite invitația
+    receiverId INT NOT NULL,              -- ID-ul utilizatorului care primește invitația
+    status ENUM('pending', 'accepted', 'declined') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (groupId) REFERENCES conversations(id),
+    FOREIGN KEY (senderId) REFERENCES users(id),
+    FOREIGN KEY (receiverId) REFERENCES users(id)
+);
 
 
 
@@ -69,3 +89,26 @@ MODIFY COLUMN type ENUM('one-on-one', 'group', 'self') NOT NULL;
 
 ALTER TABLE users
 ADD COLUMN profile_picture VARCHAR(255) DEFAULT NULL;
+
+
+CREATE TABLE notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    userId INT NOT NULL,                  -- ID-ul utilizatorului care primește notificarea
+    type ENUM('message', 'invitation') NOT NULL, -- Tipul notificării: mesaj sau invitație
+    referenceId INT NOT NULL,             -- ID-ul referinței (ID-ul mesajului sau invitației)
+    isRead BOOLEAN DEFAULT FALSE,         -- Dacă notificarea a fost citită
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (userId) REFERENCES users(id)
+);
+
+CREATE TABLE group_invitations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    groupId INT NOT NULL,                 -- ID-ul grupului pentru care este invitația
+    senderId INT NOT NULL,                -- ID-ul utilizatorului care trimite invitația
+    receiverId INT NOT NULL,              -- ID-ul utilizatorului care primește invitația
+    status ENUM('pending', 'accepted', 'declined') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (groupId) REFERENCES conversations(id),
+    FOREIGN KEY (senderId) REFERENCES users(id),
+    FOREIGN KEY (receiverId) REFERENCES users(id)
+);
