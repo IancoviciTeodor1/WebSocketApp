@@ -146,6 +146,16 @@ $profile_picture = $row['profile_picture'] ? $row['profile_picture'] : 'uploads/
             background-color: #0056b3;
         }
 
+        .success-message {
+            margin-top: 5px;
+            color: green;
+        }
+
+        .error-message {
+            margin-top: 5px;
+            color: red;
+        }
+
     </style>
 </head>
 <body>
@@ -153,10 +163,27 @@ $profile_picture = $row['profile_picture'] ? $row['profile_picture'] : 'uploads/
         <div class="profile-left">            
             <div class="profile-img-container">
                 <img src="<?php echo $profile_picture; ?>" alt="Profile Picture" class="profile-img">
-                <form action="upload_profile_pic.php" method="POST" enctype="multipart/form-data">
+                <form action="upload_profile_pic.php" method="POST" enctype="multipart/form-data" target="_self">
                     <label for="profile_pic">Upload Profile Picture:</label>
-                    <input type="file" name="profile_pic" id="profile_pic" accept="image/*">
+                    <input type="file" name="profile_pic" id="profile_pic" accept="image/*" onchange="validateFileType()">
                     <button type="submit" name="submit">Upload</button>
+                    <p id="pfp_status" class="<?php
+                        if (isset($_SESSION['pfpError'])) {
+                            if ($_SESSION['pfpError']) {
+                                echo "error-message";
+                            } else {
+                                echo "success-message";
+                            }
+                            unset($_SESSION['pfpError']);
+                        }
+                        ?>">
+                        <?php
+                            if (isset($_SESSION['pfpMessage'])) {
+                                echo $_SESSION['pfpMessage'];
+                                unset($_SESSION['pfpMessage']);
+                            }
+                        ?>
+                    </p>
                 </form>
             </div>
 
@@ -164,23 +191,57 @@ $profile_picture = $row['profile_picture'] ? $row['profile_picture'] : 'uploads/
         </div>
 
         <div class="profile-right">
-            <form action="change_username.php" method="POST">
+            <form onsubmit="return validateUsername()" action="change_username.php" method="POST" target="_self">
                 <label for="new_username">Username: </label>
                 <input type="text" id="new_username" name="new_username" value="<?php echo htmlspecialchars($username); ?>" required><br>
                 <button type="submit" name="submit">Change username</button>
+                <p id="username_status" class="<?php
+                        if (isset($_SESSION['usernameError'])) {
+                            if ($_SESSION['usernameError']) {
+                                echo "error-message";
+                            } else {
+                                echo "success-message";
+                            }
+                            unset($_SESSION['usernameError']);
+                        }
+                        ?>">
+                    <?php
+                        if (isset($_SESSION['usernameMessage'])) {
+                            echo $_SESSION['usernameMessage'];
+                            unset($_SESSION['usernameMessage']);
+                        }
+                    ?>
+                </p>
             </form>
 
             <hr>
     
-            <form action="change_email.php" method="POST">
+            <form action="change_email.php" method="POST" target="_self">
                 <label for="new_email">Email: </label>
                 <input type="email" id="new_email" name="new_email" value="<?php echo htmlspecialchars($email); ?>" required><br>
                 <button type="submit" name="submit">Change email</button>
+                <p class="<?php
+                        if (isset($_SESSION['emailError'])) {
+                            if ($_SESSION['emailError']) {
+                                echo "error-message";
+                            } else {
+                                echo "success-message";
+                            }
+                            unset($_SESSION['emailError']);
+                        }
+                        ?>">
+                    <?php
+                        if (isset($_SESSION['emailMessage'])) {
+                            echo $_SESSION['emailMessage'];
+                            unset($_SESSION['emailMessage']);
+                        }
+                    ?>
+                </p>
             </form>
 
             <hr>
     
-            <form action="change_password.php" method="POST">
+            <form onsubmit="return validatePasswordChangeForm()" action="change_password.php" method="POST" target="_self">
                 <label for="current_password">Current Password:</label>
                 <input type="password" id="current_password" name="current_password" required><br>
     
@@ -191,8 +252,100 @@ $profile_picture = $row['profile_picture'] ? $row['profile_picture'] : 'uploads/
                 <input type="password" id="confirm_password" name="confirm_password" required><br>
     
                 <button type="submit" name="submit">Change Password</button>
+
+                <p id="password_status" class="<?php
+                        if (isset($_SESSION['passwordError'])) {
+                            if ($_SESSION['passwordError']) {
+                                echo "error-message";
+                            } else {
+                                echo "success-message";
+                            }
+                            unset($_SESSION['passwordError']);
+                        }
+                        ?>">
+                    <?php
+                        if (isset($_SESSION['passwordMessage'])) {
+                            echo $_SESSION['passwordMessage'];
+                            unset($_SESSION['passwordMessage']);
+                        }
+                    ?>
+                </p>
             </form>
         </div>
     </div>
+
+    <script>
+        function validateFileType() {
+            const fileInput = document.getElementById('profile_pic');
+            const filePath = fileInput.value;
+
+            const pfpStatus = document.getElementById("pfp_status");
+
+            const allowedExtensions = /(\.jpg|\.jpeg|\.png)$/i;
+
+            if (!allowedExtensions.exec(filePath)) {
+                pfpStatus.className = "error-message";
+                pfpStatus.textContent = "Please upload an image file (JPG, JPEG, PNG).";
+                fileInput.value = '';
+            } else {
+                pfpStatus.className = "";
+                pfpStatus.textContent = "";
+            }
+        }
+
+        function validateUsername() {
+            const username = document.getElementById("new_username").value;
+
+            const usernameStatus = document.getElementById("username_status");
+
+            const usernamePattern = /^[0-9A-Za-z]{3,16}$/;
+
+            if (username.trim() === "") {
+                usernameStatus.className = "error-message";
+                usernameStatus.textContent = "New username is required.";
+                return false;
+            }
+
+            if (!usernamePattern.test(username)) {
+                usernameStatus.className = "error-message";
+                usernameStatus.textContent = "New username must be between 3 and 16 characters long and contain a mix of numbers and letters";
+                return false;
+            }
+
+
+            return true;
+        }
+
+        function validatePasswordChangeForm() {
+            const currentPassword = document.getElementById("current_password").value;
+            const newPassword = document.getElementById("new_password").value;
+            const confirmPassword = document.getElementById("confirm_password").value;
+
+            const passwordStatus = document.getElementById("password_status");
+
+            const passwordPattern = /^(?=(.*[A-Z]))(?=(.*[a-z]))(?=(.*\d))(?=(.*[!@#$%^&*(),.?":{}|<>]))[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
+
+            if (currentPassword.trim() === "") {
+                passwordStatus.className = "error-message";
+                passwordStatus.textContent = "Current password is required.";
+                return false;
+            }
+
+            if (!passwordPattern.test(newPassword)) {
+                passwordStatus.className = "error-message";
+                passwordStatus.textContent = "New password must be at least 8 characters long and contain a mix of uppercase, lowercase, numbers, and special characters.";
+                return false;
+            }
+
+            if (newPassword !== confirmPassword) {
+                passwordStatus.className = "error-message";
+                passwordStatus.textContent = "New passwords do not match.";
+                
+                return false;
+            }
+
+            return true;
+        }   
+    </script>
 </body>
 </html>

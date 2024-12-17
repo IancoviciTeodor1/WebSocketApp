@@ -3,6 +3,8 @@ session_start();
 include('db.php');
 
 $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : 'index.php';
+$message = "";
+$error = 0;
 
 if(isset($_POST['submit'])) {
 
@@ -19,7 +21,11 @@ if(isset($_POST['submit'])) {
 
             $max_size = 5 * 1024 * 1024;
             if($file_size > $max_size) {
-                echo "File size is too large. Maximum size is 5MB.";
+                $message = "File size is too large. Maximum size is 5MB.";
+                $error = 1;
+                $_SESSION['pfpMessage'] = $message;
+                $_SESSION['pfpError'] = $error;
+                header( 'Location: ' . $referer);
                 exit();
             }
 
@@ -38,20 +44,27 @@ if(isset($_POST['submit'])) {
                 $stmt = $db->prepare("UPDATE users SET profile_picture = (?) WHERE id = (?)");
 
                 if($stmt->execute([$file_path, $user_id])) {
-                    echo "Profile picture uploaded successfully!";
+                    $message = "Profile picture uploaded successfully!";
                 } else {
-                    echo "Error updating profile picture.";
+                    $message = "Error updating profile picture.";
+                    $error = 1;
                 }
             } else {
-                echo "Failed to upload the image.";
+                $message = "Failed to upload the image.";
+                $error = 1;
             }
         } else {
-            echo "Invalid file type. Only JPEG and PNG are allowed.";
+            $message = "Invalid file type. Only JPEG and PNG are allowed.";
+            $error = 1;
         }
     } else {
-        echo "No file uploaded or there was an error with the upload.";
+        $message = "No file uploaded or there was an error with the upload.";
+        $error = 1;
     }
 
-    echo '<a href="' . $referer . '"><button>Go Back</button></a>';
+    $_SESSION['pfpMessage'] = $message;
+    $_SESSION['pfpError'] = $error;
+
+    header( 'Location: ' . $referer);
 }
 ?>

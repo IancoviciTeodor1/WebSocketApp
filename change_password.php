@@ -3,6 +3,8 @@ session_start();
 require 'db.php';
 
 $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : 'index.php';
+$message = "";
+$error = 0;
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -20,21 +22,35 @@ if (isset($_POST['submit'])) {
     $stmt->execute([$user_id]);
     $user = $stmt->fetch();
 
+    $password_pattern = '/^(?=(.*[A-Z]))(?=(.*[a-z]))(?=(.*\d))(?=(.*[!@#$%^&*(),.?":{}|<>]))[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/';
+
     if ($user && password_verify($current_password, $user['password'])) {
-        if ($new_password === $confirm_password) {
+
+        if ($new_password === $current_password) {
+            $message = "New password cannot be the same as the current password.";
+            $error = 1;
+        } elseif (!preg_match($password_pattern, $new_password)) {
+            $message = "New password does not meet the required complexity (at least 8 characters, one uppercase, one lowercase, one digit, one special character).";
+            $error = 1;
+        } elseif ($new_password === $confirm_password) {
             $hashed_password = password_hash($new_password, PASSWORD_BCRYPT);
 
             $update_stmt = $db->prepare("UPDATE users SET password = (?) WHERE id = (?)");
             $update_stmt->execute([$hashed_password, $user_id]);
 
-            echo "Password successfully changed.";
+            $message = "Password successfully changed.";
         } else {
-            echo "New passwords do not match.";
+            $message = "New passwords do not match.";
+            $error = 1;
         }
     } else {
-        echo "Current password is incorrect.";
+        $message = "Current password is incorrect.";
+        $error = 1;
     }
 
-    echo '<a href="' . $referer . '"><button>Go Back</button></a>';
+    $_SESSION['passwordMessage'] = $message;
+    $_SESSION['passwordError'] = $error;
+
+    header( 'Location: ' . $referer);
 }
 ?>
