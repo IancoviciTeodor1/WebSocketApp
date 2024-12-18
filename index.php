@@ -18,7 +18,7 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
 function authenticateToken($token) {
-    $secretKey = 'secret_key'; // Folosește aceeași cheie ca la generare
+    $secretKey = 'secretkey'; // Folosește aceeași cheie ca la generare
 
     try {
         $decoded = JWT::decode($token, new Key($secretKey, 'HS256'));
@@ -275,7 +275,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         </div>
         <div id="side">
             <a href="profile.php" class="profile-btn">Profile</a>
-            <form class="logout-form" method="POST" action="">
+            <form class="logout-form" method="POST" action="" onsubmit="clearToken()">
                 <button type="submit" name="logout">Logout</button>
             </form>
         </div>
@@ -306,15 +306,6 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = 'login.php';
-            }
-        });
-    </script>
-
-    <script>
         let socket;
         let token = localStorage.getItem('token');
         let username = '<?php echo $_SESSION['username']; ?>';
@@ -329,6 +320,89 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         console.log('Token after login:', localStorage.getItem('token'));
         
         const currentUsername = <?php echo json_encode($currentUsername); ?>;
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.php';
+            }
+        });
+
+        function clearToken() {
+            localStorage.removeItem('token'); // Eliminăm token-ul din localStorage
+            localStorage.removeItem('userId'); // Dacă există și userId, îl ștergem
+            console.log('Token and userId removed from localStorage');
+        }
+
+
+        function checkTokenValidity() {
+            const token = localStorage.getItem('token'); // Obține token-ul curent din localStorage
+
+            if (!token) {
+                alert('Session expired. Redirecting to login.');
+                logoutAndRedirect(); // Apelează funcția de logout
+                return;
+            }
+
+            console.log('Checking token validity:', token); // Debugging
+
+            fetch('validate_token.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token }), // Trimite token-ul din localStorage
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Server response:', data); // Debugging răspuns server
+                    if (data.status === 'error') {
+                        alert(data.message || 'Session expired. Redirecting to login.');
+                        logoutAndRedirect(); // Apelează funcția de logout
+                    }
+                })
+                .catch(error => {
+                    console.error('Error validating token:', error); // Debugging erori
+                });
+        }
+
+        // Funcția pentru a șterge token-ul, sesiunea și a redirecționa
+        function logoutAndRedirect() {
+            // Șterge token-ul și userId-ul din localStorage
+            localStorage.removeItem('token');
+            localStorage.removeItem('userId');
+
+            // Apelează endpoint-ul de logout pe server pentru a distruge sesiunea
+            fetch('logout.php', {
+                method: 'POST',
+            })
+                .then(() => {
+                    window.location.href = 'login.php'; // Redirecționează la login
+                })
+                .catch(error => {
+                    console.error('Error during logout:', error); // Debugging erori
+                    window.location.href = 'login.php'; // Redirecționează chiar și în caz de eroare
+                });
+        }
+
+        // Verificăm token-ul o dată la 10 secunde
+        setInterval(checkTokenValidity, 10000);
+
+
+
+        function checkTokenChanged() {
+    const storedToken = localStorage.getItem('token'); // Token-ul actual din localStorage
+
+    if (storedToken !== token) {
+        alert('Session changed. Redirecting to login.');
+        window.location.href = 'login.php';
+    }
+}
+
+// Verificăm dacă token-ul s-a schimbat o dată la 5 secunde
+setInterval(checkTokenChanged, 5000);
+        
 
         // Function to search users
         async function searchUsers() {
@@ -563,7 +637,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
             messagesDiv.appendChild(messageItem);
         }
 
-            function handleSessionExpiry() {
+        function handleSessionExpiry() {
             console.log('Redirecting to login page');
             alert('Session expired. Please log in again.');
             localStorage.removeItem('token');
@@ -800,8 +874,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-
-
 
     // Funcția pentru a gestiona acceptarea/refuzarea invitațiilor
     async function handleInvitation(notificationId, action) {

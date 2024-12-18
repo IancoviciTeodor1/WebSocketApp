@@ -115,6 +115,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </form>
 
     <script>
+        let token = localStorage.getItem('token');
+        console.log('Current Token:', localStorage.getItem('token'));
+
     document.querySelector('.login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         
