@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require '../db.php';
 
 ob_start(); // Începe buffer-ul de ieșire
 

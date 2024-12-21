@@ -73,6 +73,27 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         header h1 {
             margin: 0;
         }
+        #content {
+            display: flex;
+            flex: 1;
+        }
+        #side {
+            display: inline-flex;
+            align-items: center;
+        }
+        .profile-btn {
+            margin-right: 10px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #2ecc71;
+            color: white;
+            white-space: nowrap;
+            text-decoration: none;
+        }
+        .profile-btn:hover {
+            background-color: #27ae60;
+        }
         .logout-form button {
             padding: 8px 16px;
             border: none;
@@ -83,9 +104,15 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         .logout-form button:hover {
             background-color: #ff3333;
         }
-        #content {
-            display: flex;
+        .logout-form {
+            margin: 0;
+        }
+
+        #main {
             flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
         }
         #sidebar {
             width: 30%;
@@ -93,12 +120,6 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
             border-right: 1px solid #ccc;
             padding: 10px;
             overflow-y: auto;
-        }
-        #main {
-            flex: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
         }
         #recentConversations {
             max-height: 50%;
@@ -141,29 +162,9 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
             border: none;
             background-color: #4CAF50;
             color: white;
-            cursor: pointer;
         }
         #sendButton:hover {
             background-color: #45a049;
-        }
-
-        #side {
-            display: inline-flex;
-        }
-        .profile-btn {
-            margin-right: 10px;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            background-color: #2ecc71;
-            color: white;
-            white-space: nowrap;
-            align-self: flex-start;
-            text-decoration: none;
-        }
-
-        .profile-btn:hover {
-            background-color: #27ae60;
         }
 
         .profile-pic {
@@ -198,14 +199,15 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
         #notificationContainer {
             position: relative;
-            left: 600px;
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
         }
 
         #notificationButton {
             background: none;
             border: none;
             font-size: 24px;
-            cursor: pointer;
             position: relative;
         }
 
@@ -265,50 +267,50 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 </head>
 <body>
     <header>
-        <h1><a href="index.php" style="text-decoration: none; color: black;">WebSocket Chat App</a></h1>
-        <div id="notificationContainer">
-            <!-- Panoul pentru notificări -->
-            <button id="notificationButton">🔔</button>
-            <div id="notificationDropdown" class="hidden">
-                <div id="notificationList"></div>
-            </div>
-        </div>
+        <h1><a href="index.php" style="text-decoration: none; color: black;">Wavey</a></h1>
         <div id="side">
+            <div id="notificationContainer">
+                <!-- Panoul pentru notificări -->
+                <button id="notificationButton">🔔</button>
+                <div id="notificationDropdown" class="hidden">
+                    <div id="notificationList"></div>
+                </div>
+            </div>
             <a href="profile.php" class="profile-btn">Profile</a>
             <form class="logout-form" method="POST" action="" onsubmit="clearToken()">
                 <button type="submit" name="logout">Logout</button>
             </form>
         </div>
     </header>
-        <div id="content">
-            <!-- Sidebar -->
-            <div id="sidebar">
-                <div id="userSearch">
-                    <input type="text" id="searchInput" placeholder="Search users">
-                    <button onclick="searchUsers()">Search</button>
-                    <div id="userList"></div>
-                </div>
-                <div id="recentConversations">
-                    <h3>Conversații recente</h3>
-                    <div id="conversationList"></div>
-                </div>
+    <div id="content">
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div id="userSearch">
+                <input type="text" id="searchInput" placeholder="Search users">
+                <button onclick="searchUsers()">Search</button>
+                <div id="userList"></div>
             </div>
-            <!-- Main Chat Area -->
-            <div id="main">
-                <div id="conversation">
-                    <div id="messages"></div>
-                    <div>
-                        <input type="text" id="messageInput" placeholder="Type a message">
-                        <button id="sendButton" onclick="sendMessage()">Send</button>
-                    </div>
+            <div id="recentConversations">
+                <h3>Conversații recente</h3>
+                <div id="conversationList"></div>
+            </div>
+        </div>
+        <!-- Main Chat Area -->
+        <div id="main">
+            <div id="conversation">
+                <div id="messages"></div>
+                <div>
+                    <input type="text" id="messageInput" placeholder="Type a message">
+                    <button id="sendButton" onclick="sendMessage()">Send</button>
                 </div>
             </div>
         </div>
+    </div>
 
     <script>
-        let socket;
         let token = localStorage.getItem('token');
         let username = '<?php echo $_SESSION['username']; ?>';
+        localStorage.setItem('username', username); // Salvează username în localStorage
         const userId = localStorage.getItem('userId');
         if (!userId || !token) {
             alert('Session expired. Please log in again.');
@@ -320,7 +322,52 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         console.log('Token after login:', localStorage.getItem('token'));
         
         const currentUsername = <?php echo json_encode($currentUsername); ?>;
+        const BASE_URL = `${window.location.origin}/WebSocketApp`;
 
+        let socket = null;
+        let activeConversations = new Set(); // Set pentru a ține evidența conversațiilor active
+
+        function connectWebSocket(conversationId) {
+            if (socket === null || socket.readyState === WebSocket.CLOSED) {
+                socket = new WebSocket('ws://localhost:8081');
+                
+                socket.onopen = () => {
+                    console.log('Connected to WebSocket server');
+                    joinConversation(conversationId);
+                };
+                
+                socket.onmessage = event => {
+                    const message = JSON.parse(event.data);
+                    
+                    // Verificăm dacă mesajul este destinat conversației curente
+                    if (message.conversationId === currentConversationId) {
+                        displayMessage(message); // Afișăm mesajul doar dacă face parte din conversația curentă
+                        console.log('Message is displayed');
+                        console.log('Received WebSocket message:', message);
+
+                    } else {
+                        console.log('Message is not for the current conversation');
+                    }
+                };
+                
+                socket.onclose = () => {
+                    console.log('Disconnected from WebSocket server');
+                    activeConversations.clear(); // Golim conversațiile active la deconectare
+                };
+            } else {
+                joinConversation(conversationId); // Dacă conexiunea este deja activă, doar alătură-te conversației
+            }
+        }
+
+        function joinConversation(conversationId) {
+            if (!activeConversations.has(conversationId)) {
+                socket.send(JSON.stringify({ type: 'join', conversationId }));
+                activeConversations.add(conversationId);
+                console.log(`User joined conversation ${conversationId}`);
+            } else {
+                console.log(`Already joined conversation ${conversationId}`);
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('token');
@@ -347,7 +394,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
             console.log('Checking token validity:', token); // Debugging
 
-            fetch('validate_token.php', {
+            fetch(BASE_URL + '/api/validate_token.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -374,7 +421,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
             localStorage.removeItem('userId');
 
             // Apelează endpoint-ul de logout pe server pentru a distruge sesiunea
-            fetch('logout.php', {
+            fetch(`${BASE_URL}/api/logout.php`, {
                 method: 'POST',
             })
                 .then(() => {
@@ -386,23 +433,23 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 });
         }
 
-        // Verificăm token-ul o dată la 10 secunde
-        setInterval(checkTokenValidity, 10000);
+        // Verifică token-ul o dată la 10 secunde
+        setInterval(checkTokenValidity, 90000);
 
 
 
         function checkTokenChanged() {
-    const storedToken = localStorage.getItem('token'); // Token-ul actual din localStorage
+            const storedToken = localStorage.getItem('token'); // Token-ul actual din localStorage
 
-    if (storedToken !== token) {
-        alert('Session changed. Redirecting to login.');
-        window.location.href = 'login.php';
-    }
-}
+            if (storedToken !== token) {
+                alert('Session changed. Redirecting to login.');
+                window.location.href = 'login.php';
+            }
+        }
 
-// Verificăm dacă token-ul s-a schimbat o dată la 5 secunde
-setInterval(checkTokenChanged, 5000);
-        
+        // Verifică dacă token-ul s-a schimbat o dată la 5 secunde
+        setInterval(checkTokenChanged, 5000);
+
 
         // Function to search users
         async function searchUsers() {
@@ -415,7 +462,7 @@ setInterval(checkTokenChanged, 5000);
                 localStorage.removeItem('token');
                 
                 // Trimite o cerere către server pentru a șterge sesiunea
-                await fetch('logout.php').then(() => {
+                await fetch(`${BASE_URL}/api/logout.php`).then(() => {
                     window.location.href = 'login.php';
                 });
                 return;
@@ -463,14 +510,13 @@ setInterval(checkTokenChanged, 5000);
             document.getElementById('conversation').style.display = 'block';
 
             // Verificăm dacă există deja conversația
-            fetch(`conversations.php?receiverId=${receiverId}`, {
+            fetch(`${BASE_URL}/api/conversations.php?receiverId=${receiverId}`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             })
             .then(response => {
                 if (response.ok) {
                     return response.json(); // Continuă dacă răspunsul este valid
                 } else if (response.status === 404) {
-                    // Nu există conversația, dar vom crea conversația când trimitem un mesaj
                     console.log('No conversation found, will create on message send.');
                     return { conversationId: null }; // Conversația nu există, setăm `conversationId` pe `null`
                 } else {
@@ -481,10 +527,13 @@ setInterval(checkTokenChanged, 5000);
                 if (data.conversationId) {
                     currentConversationId = data.conversationId;
                     console.log(`Conversatie deschisă: ID=${data.conversationId}, Tip=${data.type}`);
-                    loadMessages(currentConversationId);
+                    loadMessages(currentConversationId); // Încărcăm mesajele conversației
+
+                    // Conectare la WebSocket pentru această conversație
+                    connectWebSocket(data.conversationId);
                 } else {
                     console.log('Conversation will be created on first message send');
-                    currentConversationId = null; // Setează pe null dacă nu există conversația
+                    currentConversationId = null;
                 }
             })
             .catch(error => {
@@ -492,6 +541,7 @@ setInterval(checkTokenChanged, 5000);
                 alert('Failed to open conversation.');
             });
         }
+
         function openConversation(conversationId, type = null, participants = null) {
             currentConversationId = conversationId; // Setăm ID-ul conversației curente
             document.getElementById('conversation').style.display = 'block';
@@ -500,6 +550,9 @@ setInterval(checkTokenChanged, 5000);
             if (conversationId) {
                 console.log(`Loading conversation ID=${conversationId}`);
                 loadMessages(conversationId);
+
+                // Conectare la WebSocket pentru această conversație
+                connectWebSocket(conversationId);
                 return;
             }
 
@@ -516,111 +569,12 @@ setInterval(checkTokenChanged, 5000);
             }
         }
 
-
-
-        // Function to create a new conversation
-        function createConversation(receiverId, message, userId) {
-            fetch('conversations.php', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({
-                    userId: userId,
-                    receiverId: receiverId
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.conversationId) {
-                    currentConversationId = data.conversationId;
-                    sendMessageToConversation(currentConversationId, message, userId);
-                } else {
-                    console.error('Failed to create conversation, conversationId missing');
-                    alert('Failed to create conversation: conversationId not returned from server');
-                }
-            })
-            .catch(error => {
-                console.error('Error creating conversation:', error);
-                alert('Error creating conversation');
-            });
-        }
-
-        function findOrCreateConversation(receiverId, message, userId) {
-            // Verifică mai întâi dacă există conversația
-            const url = `conversations.php?userId=${userId}&receiverId=${receiverId}`;
-
-            fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Error searching for conversation');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.conversationId) {
-                    // Dacă există conversație, setează `currentConversationId`
-                    currentConversationId = data.conversationId;
-                    sendMessageToConversation(currentConversationId, message, userId);
-                } else {
-                    // Dacă nu există conversație, o creează
-                    createConversation(receiverId, message, userId);
-                }
-            })
-            .catch(error => {
-                console.error('Failed to find or create conversation:', error);
-                alert('Failed to find or create conversation.');
-            });
-        }
-
-        function sendMessageToConversation(conversationId, message, userId) {
-            if (!conversationId) {
-                console.log("Conversation not found; message cannot be sent.");
-                return;
-            }
-
-            fetch(`messages.php?conversationId=${conversationId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({
-                    content: message
-                })
-            })
-            .then(response => {
-                console.log("Raw response:", response);
-                if (!response.ok) {
-                    return response.text().then(text => { throw new Error(text); });
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    displayMessage(data.message);
-                } else {
-                    console.error('Error in response data:', data.error || 'Unknown error');
-                }
-            })
-            .catch(error => {
-                console.error('Error sending message:', error);
-                alert('Failed to send message: ' + error.message);
-            });
-        }
-
         function displayMessage(message) {
             const messagesDiv = document.getElementById('messages');
-
+            
             const messageItem = document.createElement('div');
-            messageItem.classList = "message-item";
-
+            messageItem.classList.add('message-item');
+            
             messageItem.innerHTML = `
                 <div class="message-header">
                     <img src="${message.profile_picture}" alt="Profile Picture" class="profile-pic">
@@ -633,9 +587,14 @@ setInterval(checkTokenChanged, 5000);
                     ${message.content || ''}
                 </div>
             `;
-
+            
+            // Adăugăm mesajul la sfârșitul conversației
             messagesDiv.appendChild(messageItem);
+
+            // Scroll automat pentru a vizualiza cel mai recent mesaj
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
+
 
         function handleSessionExpiry() {
             console.log('Redirecting to login page');
@@ -654,9 +613,10 @@ setInterval(checkTokenChanged, 5000);
             .then(response => response.json())
             .then(messages => {
                 const messagesDiv = document.getElementById('messages');
-                messagesDiv.innerHTML = '';
+                messagesDiv.innerHTML = ''; // Curățăm mesajele existente
+                
                 messages.forEach(message => {
-                    displayMessage(message);
+                    displayMessage(message); // Afișăm fiecare mesaj existent
                 });
             })
             .catch(error => {
@@ -665,40 +625,7 @@ setInterval(checkTokenChanged, 5000);
             });
         }
 
-        // Function to connect WebSocket
-        function connectWebSocket(username) {
-            socket = new WebSocket('ws://localhost:8081');
-            socket.onopen = () => {
-                console.log('Connected to server');
-            };
-            socket.onmessage = event => {
-                const message = JSON.parse(event.data);
-                displayMessage(message);
-            };
-            socket.onclose = () => {
-                console.log('Disconnected from server');
-            };
-        }
 
-        // Function to send a message
-        /*function sendMessage() {
-            const message = document.getElementById('messageInput').value;
-            const receiverId = currentReceiverId;
-            const userId = localStorage.getItem('userId');
-            const token = localStorage.getItem('token');
-
-            if (!token || !message || !receiverId) {
-                alert('Message or receiver is missing.');
-                return;
-            }
-
-            // Verifică dacă `currentConversationId` este definit
-            if (!currentConversationId) {
-                findOrCreateConversation(receiverId, message, userId);
-            } else {
-                sendMessageToConversation(currentConversationId, message, userId);
-            }
-        }*/
         function sendMessage() {
             const userId = localStorage.getItem('userId');
             const messageInput = document.getElementById('messageInput');
@@ -711,40 +638,55 @@ setInterval(checkTokenChanged, 5000);
 
             const payload = {
                 content: messageContent,
-                conversationId: currentConversationId || null, // Pentru conversații existente
-                receiverId: currentConversationId ? null : currentReceiverId, // Doar pentru conversații noi
-                senderId: userId, // ID-ul utilizatorului curent
+                conversationId: currentConversationId || null,
+                receiverId: currentConversationId ? null : currentReceiverId,
+                senderId: userId,
             };
 
             console.log('Payload sent to server:', payload);
 
-            fetch('send_message.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(err => {
-                        console.error('Error response text:', err);
-                        throw new Error(`HTTP Error: ${response.status}`);
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Message sent successfully:', data);
-                messageInput.value = ''; // Golește câmpul de text
-                loadMessages(data.conversationId); // Reîncarcă mesajele
-            })
-            .catch(error => {
-                console.error('Error sending message:', error);
-                alert('Failed to send message.');
-            });
-        }
+            // Trimitem mesajul doar prin WebSocket (fără fetch)
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                const wsPayload = {
+                    type: 'message',
+                    content: messageContent,
+                    conversationId: currentConversationId,
+                    senderId: userId,
+                    username: localStorage.getItem('username'),
+                };
 
+                console.log('Sending WebSocket message:', wsPayload);
+                socket.send(JSON.stringify(wsPayload));
+            } else {
+                // Dacă WebSocket nu este disponibil, salvăm mesajul prin fetch
+                console.warn('WebSocket is not connected. Falling back to REST API.');
+                fetch(`${BASE_URL}/api/send_message.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.text().then(err => {
+                                console.error('Error response text:', err);
+                                throw new Error(`HTTP Error: ${response.status}`);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Message sent successfully:', data);
+                        messageInput.value = ''; // Golește câmpul de text
+                        loadMessages(data.conversationId); // Reîncarcă mesajele
+                    })
+                    .catch(error => {
+                        console.error('Error sending message:', error);
+                        alert('Failed to send message.');
+                    });
+            }
+        }
 
 
         let offset = 0; // Offset pentru paginare
@@ -754,7 +696,7 @@ setInterval(checkTokenChanged, 5000);
 
         // Funcție pentru a încărca conversațiile recente
         function loadRecentConversations(offset = 0, limit = 20) {
-            fetch(`recent_conversations.php?offset=${offset}&limit=${limit}`, {
+            fetch(`${BASE_URL}/api/recent_conversations.php?offset=${offset}&limit=${limit}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -802,106 +744,106 @@ setInterval(checkTokenChanged, 5000);
 
         let notificationsVisible = false;
 
-    // Funcția pentru a comuta vizibilitatea listei de notificări
-    async function loadNotifications() {
-    try {
-        const response = await fetch('notifications.php', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        // Funcția pentru a comuta vizibilitatea listei de notificări
+        async function loadNotifications() {
+            try {
+                const response = await fetch(`${BASE_URL}/api/notifications.php`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch notifications');
-        }
-
-        const data = await response.json();
-        const notificationList = document.getElementById('notificationList');
-        notificationList.innerHTML = '';
-
-        if (data.length === 0) {
-            notificationList.innerHTML = '<p>No new notifications</p>';
-            document.getElementById('notificationButton').classList.remove('has-notifications');
-        } else {
-            data.forEach(notification => {
-                const item = document.createElement('div');
-                item.style.padding = '10px';
-                item.style.borderBottom = '1px solid #ddd';
-
-                let notificationContent = '';
-
-                if (notification.conversation_type === 'one-on-one') {
-                    // Notificare pentru conversații individuale
-                    notificationContent = `<b>${notification.sender_name}:</b> ${notification.message_content}`;
-                } else if (notification.conversation_type === 'group') {
-                    // Notificare pentru conversații de grup
-                    notificationContent = `<b>${notification.group_name}<br>${notification.sender_name}:</b> ${notification.message_content}`;
+                if (!response.ok) {
+                    throw new Error('Failed to fetch notifications');
                 }
 
-                item.innerHTML = notificationContent;
+                const data = await response.json();
+                const notificationList = document.getElementById('notificationList');
+                notificationList.innerHTML = '';
 
-                // Adaugă un eveniment de click pentru a deschide conversația
-                item.style.cursor = 'pointer';
-                item.onclick = () => openConversation(notification.conversation_id);
+                if (data.length === 0) {
+                    notificationList.innerHTML = '<p>No new notifications</p>';
+                    document.getElementById('notificationButton').classList.remove('has-notifications');
+                } else {
+                    data.forEach(notification => {
+                        const item = document.createElement('div');
+                        item.style.padding = '10px';
+                        item.style.borderBottom = '1px solid #ddd';
 
-                notificationList.appendChild(item);
-            });
+                        let notificationContent = '';
 
-            document.getElementById('notificationButton').classList.add('has-notifications');
-        }
-    } catch (error) {
-        console.error('Error loading notifications:', error);
-    }
-}
+                        if (notification.conversation_type === 'one-on-one') {
+                            // Notificare pentru conversații individuale
+                            notificationContent = `<b>${notification.sender_name}:</b> ${notification.message_content}`;
+                        } else if (notification.conversation_type === 'group') {
+                            // Notificare pentru conversații de grup
+                            notificationContent = `<b>${notification.group_name}<br>${notification.sender_name}:</b> ${notification.message_content}`;
+                        }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const notificationButton = document.getElementById('notificationButton');
-    const notificationDropdown = document.getElementById('notificationDropdown');
+                        item.innerHTML = notificationContent;
 
-    // Eveniment pentru afișarea/ascunderea notificărilor
-    notificationButton.addEventListener('click', () => {
-        notificationDropdown.classList.toggle('hidden'); // Toggle visibility
-        if (!notificationDropdown.classList.contains('hidden')) {
-            loadNotifications(); // Încarcă notificările doar când dropdown-ul este deschis
-        }
-    });
+                        // Adaugă un eveniment de click pentru a deschide conversația
+                        item.style.cursor = 'pointer';
+                        item.onclick = () => openConversation(notification.conversation_id);
 
-    // Închide dropdown-ul când se face click în afara lui
-    document.addEventListener('click', (event) => {
-        if (!notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
-            notificationDropdown.classList.add('hidden');
-        }
-    });
-});
+                        notificationList.appendChild(item);
+                    });
 
-    // Funcția pentru a gestiona acceptarea/refuzarea invitațiilor
-    async function handleInvitation(notificationId, action) {
-        try {
-            const response = await fetch('handle_invitation.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ notificationId, action })
-            });
-
-            const result = await response.json();
-            if (result.success) {
-                alert(`Invitation ${action}ed successfully`);
-                loadNotifications(); // Reîncărcăm notificările
-            } else {
-                alert('Failed to handle invitation');
+                    document.getElementById('notificationButton').classList.add('has-notifications');
+                }
+            } catch (error) {
+                console.error('Error loading notifications:', error);
             }
-        } catch (error) {
-            console.error('Error handling invitation:', error);
         }
-    }
 
-    // Încarcă notificările periodic
-    setInterval(loadNotifications, 10000);
-    loadNotifications(); // Încarcă notificările imediat ce se încarcă pagina
+        document.addEventListener('DOMContentLoaded', () => {
+            const notificationButton = document.getElementById('notificationButton');
+            const notificationDropdown = document.getElementById('notificationDropdown');
+
+            // Eveniment pentru afișarea/ascunderea notificărilor
+            notificationButton.addEventListener('click', () => {
+                notificationDropdown.classList.toggle('hidden'); // Toggle visibility
+                if (!notificationDropdown.classList.contains('hidden')) {
+                    loadNotifications(); // Încarcă notificările doar când dropdown-ul este deschis
+                }
+            });
+
+            // Închide dropdown-ul când se face click în afara lui
+            document.addEventListener('click', (event) => {
+                if (!notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
+                    notificationDropdown.classList.add('hidden');
+                }
+            });
+        });
+
+        // Funcția pentru a gestiona acceptarea/refuzarea invitațiilor
+        async function handleInvitation(notificationId, action) {
+            try {
+                const response = await fetch('handle_invitation.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ notificationId, action })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(`Invitation ${action}ed successfully`);
+                    loadNotifications(); // Reîncărcăm notificările
+                } else {
+                    alert('Failed to handle invitation');
+                }
+            } catch (error) {
+                console.error('Error handling invitation:', error);
+            }
+        }
+
+        // Încarcă notificările periodic
+        setInterval(loadNotifications, 10000);
+        loadNotifications(); // Încarcă notificările imediat ce se încarcă pagina
 
         console.log(currentUsername);
 
@@ -915,11 +857,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Încarcă primele conversații la inițializare
         loadRecentConversations();
-
-
-        // Connect WebSocket on page load
-        connectWebSocket(username);
     </script>
-
 </body>
 </html>

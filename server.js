@@ -184,36 +184,94 @@ initializeDatabase().then(connection => {
     });
     
     
-    server.on('connection', socket => {
-        socket.on('message', async message => {
-            const data = JSON.parse(message);
-            const { conversationId, senderId, content, username } = data;
-    
-            console.log(`Message from ${username} (id: ${senderId}) in conversation ${conversationId}: ${content}`);
-    
-            if (!conversationId || !senderId || !content || !username) {
-                console.error('Undefined parameter detected', { conversationId, senderId, content, username });
-                return;
-            }
-    
+    const clients = new Map();
+
+server.on('connection', (socket) => {
+    console.log('A new WebSocket connection was established');
+
+    socket.on('message', async (message) => {
+        const data = JSON.parse(message);
+
+        console.log('Message received:', data);
+
+        if (data.type === 'join') {
+            clients.set(socket, data.conversationId);
+            console.log(`User joined conversation ${data.conversationId}`);
+        } else if (data.type === 'message') {
+            const { conversationId, content, senderId, username } = data;
+
+            // Logăm trimiterea mesajului
+            console.log(`Message sent in conversation ${conversationId}: ${content}`);
+
             try {
-                await db.execute('INSERT INTO messages (conversationId, senderId, content) VALUES (?, ?, ?)', [conversationId, senderId, content]);
+                // Salvează mesajul în baza de date și obține timestamp-ul generat
+                const [result] = await db.execute(
+                    'INSERT INTO messages (conversationId, senderId, content) VALUES (?, ?, ?)',
+                    [conversationId, senderId, content]
+                );
+
+                const messageId = result.insertId;
+
+                // Obține informațiile utilizatorului și mesajului
+                const [rows] = await db.execute(
+                    `SELECT m.id, m.timestamp, u.profile_picture 
+                     FROM messages m 
+                     JOIN users u ON m.senderId = u.id 
+                     WHERE m.id = ?`,
+                    [messageId]
+                );
+
+                const enrichedMessage = {
+                    username,
+                    content,
+                    conversationId,
+                    profile_picture: rows[0]?.profile_picture || 'default_profile_picture.png',
+                    timestamp: rows[0]?.timestamp || new Date().toISOString(),
+                };
+
+                // Trimite mesajul către utilizatorii din aceeași conversație
+                clients.forEach((clientConversationId, clientSocket) => {
+                    if (
+                        clientConversationId === conversationId &&
+                        clientSocket.readyState === WebSocket.OPEN
+                    ) {
+                        console.log(`Sending message to client in conversation ${conversationId}`);
+                        clientSocket.send(JSON.stringify(enrichedMessage));
+                    }
+                });
             } catch (err) {
-                console.error('Error saving message:', err);
+                console.error('Error processing message:', err);
             }
-    
-            const formattedMessage = { username: username, content: content };
-            server.clients.forEach(client => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify(formattedMessage));
-                }
-            });
-        });
+        }
     });
+
+    socket.on('close', () => {
+        console.log('A WebSocket connection was closed');
+        clients.delete(socket);
+    });
+});
+
     
     app.listen(3000, () => {
         console.log('HTTP server is running on http://localhost:3000');
     });
+
+    const socket = new WebSocket('ws://localhost:8081');
+
+    socket.onopen = () => {
+        console.log('Connected to WebSocket server');
+        //socket.send(JSON.stringify({ type: 'join', conversationId: 12 }));
+    };
+
+    socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        console.log('Message received:', message);
+    };
+
+    socket.onclose = () => {
+        console.log('Disconnected from WebSocket server');
+    };
+
     
     console.log('WebSocket server is running on ws://localhost:8081');
 }).catch(err => {
