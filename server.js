@@ -160,6 +160,7 @@ initializeDatabase().then(connection => {
             );
 
             const formattedMessages = rows.map(msg => ({
+                id: msg.id,
                 username: msg.username,
                 content: msg.content,
                 timestamp: msg.timestamp,
@@ -186,70 +187,106 @@ initializeDatabase().then(connection => {
     
     const clients = new Map();
 
-server.on('connection', (socket) => {
-    console.log('A new WebSocket connection was established');
-
-    socket.on('message', async (message) => {
-        const data = JSON.parse(message);
-
-        console.log('Message received:', data);
-
-        if (data.type === 'join') {
-            clients.set(socket, data.conversationId);
-            console.log(`User joined conversation ${data.conversationId}`);
-        } else if (data.type === 'message') {
-            const { conversationId, content, senderId, username } = data;
-
-            // Logăm trimiterea mesajului
-            console.log(`Message sent in conversation ${conversationId}: ${content}`);
-
-            try {
-                // Salvează mesajul în baza de date și obține timestamp-ul generat
-                const [result] = await db.execute(
-                    'INSERT INTO messages (conversationId, senderId, content) VALUES (?, ?, ?)',
-                    [conversationId, senderId, content]
-                );
-
-                const messageId = result.insertId;
-
-                // Obține informațiile utilizatorului și mesajului
-                const [rows] = await db.execute(
-                    `SELECT m.id, m.timestamp, u.profile_picture 
-                     FROM messages m 
-                     JOIN users u ON m.senderId = u.id 
-                     WHERE m.id = ?`,
-                    [messageId]
-                );
-
-                const enrichedMessage = {
-                    username,
-                    content,
-                    conversationId,
-                    profile_picture: rows[0]?.profile_picture || 'default_profile_picture.png',
-                    timestamp: rows[0]?.timestamp || new Date().toISOString(),
-                };
-
-                // Trimite mesajul către utilizatorii din aceeași conversație
-                clients.forEach((clientConversationId, clientSocket) => {
-                    if (
-                        clientConversationId === conversationId &&
-                        clientSocket.readyState === WebSocket.OPEN
-                    ) {
-                        console.log(`Sending message to client in conversation ${conversationId}`);
-                        clientSocket.send(JSON.stringify(enrichedMessage));
+    server.on('connection', (socket) => {
+        console.log('A new WebSocket connection was established');
+    
+        socket.on('message', async (message) => {
+            const data = JSON.parse(message);
+    
+            if (data.type === 'join') {
+                clients.set(socket, data.conversationId);
+                console.log(`User joined conversation ${data.conversationId}`);
+            } else if (data.type === 'message') {
+                const { conversationId, content, senderId, username } = data;
+    
+                console.log(`Message sent in conversation ${conversationId}: ${content}`);
+    
+                try {
+                    // Salvăm mesajul în baza de date
+                    const [result] = await db.execute(
+                        'INSERT INTO messages (conversationId, senderId, content) VALUES (?, ?, ?)',
+                        [conversationId, senderId, content]
+                    );
+                    const messageId = result.insertId;
+    
+                    // Obținem imaginea de profil a expeditorului
+                    const [profileRow] = await db.execute(
+                        `SELECT profile_picture FROM users WHERE id = ?`,
+                        [senderId]
+                    );
+                    const profilePicture = profileRow[0]?.profile_picture || 'default_profile_picture.png';
+    
+                    // Obținem participanții conversației care nu sunt expeditori
+                    const [participants] = await db.execute(
+                        `SELECT userId FROM participants WHERE conversationId = ? AND userId != ?`,
+                        [conversationId, senderId]
+                    );
+    
+                    // Verificăm și actualizăm notificările pentru fiecare participant
+                    for (const participant of participants) {
+                        const [existingNotification] = await db.execute(
+                            `SELECT id FROM notifications 
+                             WHERE userId = ? AND type = 'message' AND referenceId = ? 
+                             LIMIT 1`,
+                            [participant.userId, conversationId]
+                        );
+    
+                        if (existingNotification.length > 0) {
+                            // Actualizăm notificarea existentă
+                            await db.execute(
+                                `UPDATE notifications 
+                                 SET isRead = FALSE, created_at = NOW() 
+                                 WHERE id = ?`,
+                                [existingNotification[0].id]
+                            );
+                            console.log(
+                                `Notification updated for userId: ${participant.userId}, conversationId: ${conversationId}`
+                            );
+                        } else {
+                            // Creăm o notificare nouă dacă nu există
+                            await db.execute(
+                                `INSERT INTO notifications (userId, type, referenceId, isRead, created_at) 
+                                 VALUES (?, 'message', ?, FALSE, NOW())`,
+                                [participant.userId, conversationId]
+                            );
+                            console.log(
+                                `Notification created for userId: ${participant.userId}, conversationId: ${conversationId}`
+                            );
+                        }
                     }
-                });
-            } catch (err) {
-                console.error('Error processing message:', err);
+    
+                    // Trimitem mesajul către utilizatorii activi în conversație
+                    clients.forEach((clientConversationId, clientSocket) => {
+                        if (
+                            clientConversationId === conversationId &&
+                            clientSocket.readyState === WebSocket.OPEN
+                        ) {
+                            console.log(`Sending message to client in conversation ${conversationId}`);
+                            clientSocket.send(
+                                JSON.stringify({
+                                    type: 'message',
+                                    conversationId,
+                                    content,
+                                    senderId,
+                                    username,
+                                    profile_picture: profilePicture,  // Adăugăm imaginea de profil
+                                    timestamp: new Date().toISOString(),
+                                })
+                            );
+                        }
+                    });
+                } catch (err) {
+                    console.error('Error processing message:', err);
+                }
             }
-        }
+        });
+    
+        socket.on('close', () => {
+            console.log('A WebSocket connection was closed');
+            clients.delete(socket);
+        });
     });
-
-    socket.on('close', () => {
-        console.log('A WebSocket connection was closed');
-        clients.delete(socket);
-    });
-});
+    
 
     
     app.listen(3000, () => {
