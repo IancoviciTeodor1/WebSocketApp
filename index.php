@@ -263,6 +263,33 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
             font-size: 14px;
             color: #333;
         }
+
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            margin-top: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        footer a {
+            color: #ffcc00;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        footer p {
+            margin: 0;
+        }
+
+        
     </style>
 </head>
 <body>
@@ -306,6 +333,15 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
             </div>
         </div>
     </div>
+
+    <footer>
+        <div class="footer-content">
+            <a href="contact.php">Contact Us</a>
+        </div>
+        <div class="footer-content">
+            &copy; 2025 Wavey
+        </div>
+    </footer>
 
     <script>
         let token = localStorage.getItem('token');
