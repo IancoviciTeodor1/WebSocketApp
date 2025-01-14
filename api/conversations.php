@@ -1,6 +1,6 @@
 <?php
 session_start();
-require 'db.php';
+require '../db.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) {

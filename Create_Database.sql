@@ -6,7 +6,8 @@ CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE
+    email VARCHAR(255) NOT NULL UNIQUE,
+    profile_picture VARCHAR(255) DEFAULT NULL
 );
 
 CREATE TABLE contacts (
@@ -63,6 +64,16 @@ CREATE TABLE group_invitations (
     FOREIGN KEY (receiverId) REFERENCES users(id)
 );
 
+CREATE TABLE last_read_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    userId INT NOT NULL,
+    conversationId INT NOT NULL,
+    lastReadMessageId INT NOT NULL,
+    FOREIGN KEY (userId) REFERENCES users(id),
+    FOREIGN KEY (conversationId) REFERENCES conversations(id),
+    FOREIGN KEY (lastReadMessageId) REFERENCES messages(id),
+    UNIQUE (userId, conversationId)
+);
 
 
 
@@ -87,6 +98,9 @@ ADD FOREIGN KEY (conversationId) REFERENCES conversations(id);
 ALTER TABLE conversations 
 MODIFY COLUMN type ENUM('one-on-one', 'group', 'self') NOT NULL;
 
+ALTER TABLE users
+ADD COLUMN profile_picture VARCHAR(255) DEFAULT NULL;
+
 
 CREATE TABLE notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -108,4 +122,17 @@ CREATE TABLE group_invitations (
     FOREIGN KEY (groupId) REFERENCES conversations(id),
     FOREIGN KEY (senderId) REFERENCES users(id),
     FOREIGN KEY (receiverId) REFERENCES users(id)
+);
+
+
+
+CREATE TABLE last_read_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    userId INT NOT NULL,
+    conversationId INT NOT NULL,
+    lastReadMessageId INT NOT NULL,
+    FOREIGN KEY (userId) REFERENCES users(id),
+    FOREIGN KEY (conversationId) REFERENCES conversations(id),
+    FOREIGN KEY (lastReadMessageId) REFERENCES messages(id),
+    UNIQUE (userId, conversationId)
 );

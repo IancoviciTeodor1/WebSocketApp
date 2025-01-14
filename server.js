@@ -152,7 +152,7 @@ initializeDatabase().then(connection => {
         const { conversationId } = req.query;
         try {
             const [rows] = await db.execute(
-                `SELECT m.*, u.username FROM messages m
+                `SELECT m.*, u.username, u.profile_picture FROM messages m
                  JOIN users u ON m.senderId = u.id
                  WHERE m.conversationId = ?
                  ORDER BY m.timestamp`,
@@ -160,9 +160,11 @@ initializeDatabase().then(connection => {
             );
 
             const formattedMessages = rows.map(msg => ({
+                id: msg.id,
                 username: msg.username,
                 content: msg.content,
-                timestamp: msg.timestamp
+                timestamp: msg.timestamp,
+                profile_picture: msg.profile_picture || 'default.jpg'
             }));
             res.json(formattedMessages);
         } catch (error) {
@@ -183,36 +185,165 @@ initializeDatabase().then(connection => {
     });
     
     
-    server.on('connection', socket => {
-        socket.on('message', async message => {
+    const clients = new Map();
+
+    server.on('connection', (socket) => {
+        console.log('A new WebSocket connection was established');
+    
+        socket.on('message', async (message) => {
             const data = JSON.parse(message);
-            const { conversationId, senderId, content, username } = data;
     
-            console.log(`Message from ${username} (id: ${senderId}) in conversation ${conversationId}: ${content}`);
-    
-            if (!conversationId || !senderId || !content || !username) {
-                console.error('Undefined parameter detected', { conversationId, senderId, content, username });
-                return;
-            }
-    
-            try {
-                await db.execute('INSERT INTO messages (conversationId, senderId, content) VALUES (?, ?, ?)', [conversationId, senderId, content]);
-            } catch (err) {
-                console.error('Error saving message:', err);
-            }
-    
-            const formattedMessage = { username: username, content: content };
-            server.clients.forEach(client => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify(formattedMessage));
+            if (data.type === 'join') {
+                clients.set(socket, data.conversationId);
+                console.log(`User joined conversation ${data.conversationId}`);
+            } else if (data.type === 'leave') {
+                // Verificăm dacă socket-ul este asociat cu conversația
+                if (clients.has(socket) && clients.get(socket) === data.conversationId) {
+                    clients.delete(socket);
+                    console.log(`User left conversation ${data.conversationId}`);
+                } else {
+                    console.log(`No active conversation to leave for socket`);
                 }
-            });
+            } else if (data.type === 'message') {
+                const { conversationId, content, senderId, username } = data;
+    
+                console.log(`Message sent in conversation ${conversationId}: ${content}`);
+    
+                try {
+                    // Salvăm mesajul în baza de date
+                    const [result] = await db.execute(
+                        'INSERT INTO messages (conversationId, senderId, content) VALUES (?, ?, ?)',
+                        [conversationId, senderId, content]
+                    );
+                    const messageId = result.insertId;
+
+                    // Actualizăm ultimul mesaj citit pentru expeditor
+                    await db.execute(
+                        `UPDATE last_read_messages 
+                        SET lastReadMessageId = ? 
+                        WHERE conversationId = ? AND userId = ?`,
+                        [messageId, conversationId, senderId]
+                    );
+
+                    console.log(`Updated last read message for the User ${senderId} in conversation ${conversationId}`);
+
+
+                    /* Actualizare pentru toți utilizatorii activi în conversație
+                    clients.forEach((clientConversationId, clientSocket) => {
+                        if (clientConversationId === conversationId && clientSocket !== socket) {
+                            db.execute(
+                                `UPDATE last_read_messages 
+                                SET lastReadMessageId = ? 
+                                WHERE conversationId = ? AND userId = ?`,
+                                [messageId, conversationId, senderId]
+                            );
+                        }
+                    }); */
+
+    
+                    // Obținem imaginea de profil a expeditorului
+                    const [profileRow] = await db.execute(
+                        `SELECT profile_picture FROM users WHERE id = ?`,
+                        [senderId]
+                    );
+                    const profilePicture = profileRow[0]?.profile_picture || 'default_profile_picture.png';
+    
+                    // Obținem participanții conversației care nu sunt expeditori
+                    const [participants] = await db.execute(
+                        `SELECT userId FROM participants WHERE conversationId = ? AND userId != ?`,
+                        [conversationId, senderId]
+                    );
+    
+                    // Verificăm și actualizăm notificările pentru fiecare participant
+                    for (const participant of participants) {
+                        const [existingNotification] = await db.execute(
+                            `SELECT id FROM notifications 
+                             WHERE userId = ? AND type = 'message' AND referenceId = ? 
+                             LIMIT 1`,
+                            [participant.userId, conversationId]
+                        );
+    
+                        if (existingNotification.length > 0) {
+                            // Actualizăm notificarea existentă
+                            await db.execute(
+                                `UPDATE notifications 
+                                 SET isRead = FALSE, created_at = NOW() 
+                                 WHERE id = ?`,
+                                [existingNotification[0].id]
+                            );
+                            console.log(
+                                `Notification updated for userId: ${participant.userId}, conversationId: ${conversationId}`
+                            );
+                        } else {
+                            // Creăm o notificare nouă dacă nu există
+                            await db.execute(
+                                `INSERT INTO notifications (userId, type, referenceId, isRead, created_at) 
+                                 VALUES (?, 'message', ?, FALSE, NOW())`,
+                                [participant.userId, conversationId]
+                            );
+                            console.log(
+                                `Notification created for userId: ${participant.userId}, conversationId: ${conversationId}`
+                            );
+                        }
+                    }
+    
+                    // Trimitem mesajul către utilizatorii activi și actualizăm last_read_messages
+                    clients.forEach(async (clientConversationId, clientSocket) => {
+                        if (
+                            clientConversationId === conversationId &&
+                            clientSocket.readyState === WebSocket.OPEN
+                        ) {
+                            console.log(`Sending message to client in conversation ${conversationId}`);
+                            
+                            // Mesajul este trimis catre utilizatorii activi
+                            clientSocket.send(
+                                JSON.stringify({
+                                    type: 'message',
+                                    conversationId,
+                                    content,
+                                    senderId,
+                                    username,
+                                    profile_picture: profilePicture,
+                                    timestamp: new Date().toISOString(),
+                                })
+                            );
+                        }
+                    });
+
+                } catch (err) {
+                    console.error('Error processing message:', err);
+                }
+            }
+        });
+    
+        socket.on('close', () => {
+            console.log('A WebSocket connection was closed');
+            clients.delete(socket);
         });
     });
+    
+
     
     app.listen(3000, () => {
         console.log('HTTP server is running on http://localhost:3000');
     });
+
+    const socket = new WebSocket('ws://localhost:8081');
+
+    socket.onopen = () => {
+        console.log('Connected to WebSocket server');
+        //socket.send(JSON.stringify({ type: 'join', conversationId: 12 }));
+    };
+
+    socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        console.log('Message received:', message);
+    };
+
+    socket.onclose = () => {
+        console.log('Disconnected from WebSocket server');
+    };
+
     
     console.log('WebSocket server is running on ws://localhost:8081');
 }).catch(err => {

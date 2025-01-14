@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require '../db.php';
 
 ob_start(); // Începe buffer-ul de ieșire
 
@@ -59,6 +59,12 @@ try {
         echo json_encode(['error' => 'Conversation ID or Receiver ID is required.']);
         exit;
     }
+
+    // Actualizează sau inserează în last_read_messages
+    $stmt = $db->prepare("INSERT INTO last_read_messages (userId, conversationId, lastReadMessageId) 
+                          VALUES (?, ?, ?)
+                          ON DUPLICATE KEY UPDATE lastReadMessageId = ?");
+    $stmt->execute([$senderId, $conversationId, $messageId, $messageId]);
     
     // Obține lista participanților din conversație, excluzând expeditorul
     $stmt = $db->prepare("SELECT userId FROM participants WHERE conversationId = ? AND userId != ?");
