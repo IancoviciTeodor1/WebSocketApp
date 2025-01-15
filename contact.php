@@ -1,8 +1,25 @@
 <?php
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+session_start();
+
+// Check if the user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
 
 require 'vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+use Dotenv\Dotenv;
+
+$dotenv = Dotenv::createUnsafeImmutable(__DIR__);
+$dotenv->load();
+
+$mail_user = getenv('MAIL_USER');
+$mail_pwd = getenv('MAIL_PWD');
+$mail_recipient = getenv('MAIL_RECIPIENT');
+
 
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -21,15 +38,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
         // Your email address (the one that sends the email)
-        $mail->Username = ''; 
+        $mail->Username = $mail_user; 
         // Enable 2FA and use an App Password
-        $mail->Password = ''; 
+        $mail->Password = $mail_pwd; 
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
 
         $mail->setFrom($email, $name);
         // The email address that receives all the emails
-        $mail->addAddress('', 'Recipient Name');
+        $mail->addAddress($mail_recipient, 'Recipient Name');
 
         $mail->isHTML(true);
         $mail->Subject = 'New message submission!';
