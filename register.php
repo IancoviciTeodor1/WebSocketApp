@@ -1,37 +1,65 @@
 <?php
 session_start();
-require 'db.php'; // Include the database connection file
+require 'db.php';
+require 'vendor/autoload.php';
 
+use Firebase\JWT\JWT;
+
+// Verifică dacă este o cerere POST
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
-    $email = $_POST['email'];
+    // Obține conținutul JSON trimis prin fetch
+    $json = file_get_contents('php://input');
+    $data = json_decode($json, true);
+
+    $username = $data['username'];
+    $password = $data['password'];
+    $confirm_password = $data['confirm_password'];
+    $email = $data['email'];
 
     if ($password !== $confirm_password) {
-        $error = 'Passwords do not match';
-    } else {
-        // Query the database to check if the email already exists
-        $stmt = $db->prepare('SELECT * FROM users WHERE email = ?');
-        $stmt->execute([$email]);
-        if ($stmt->fetch()) {
-            $error = 'Email already registered';
-        } else {
-            try {
-                $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
-                $stmt = $db->prepare('INSERT INTO users (username, password, email) VALUES (?, ?, ?)');
-                $stmt->execute([$username, $hashedPassword, $email]);
+        echo json_encode(['error' => 'Passwords do not match']);
+        exit();
+    }
 
-                // Automatically log in the user
-                $_SESSION['user_id'] = $db->lastInsertId();
-                $_SESSION['username'] = $username;
+    // Verifică dacă email-ul există deja
+    $stmt = $db->prepare('SELECT * FROM users WHERE email = ?');
+    $stmt->execute([$email]);
+    if ($stmt->fetch()) {
+        echo json_encode(['error' => 'Email already registered']);
+        exit();
+    }
 
-                header('Location: index.php');
-                exit();
-            } catch (Exception $e) {
-                $error = 'Registration failed: ' . $e->getMessage();
-            }
-        }
+    try {
+        // Introdu utilizatorul în baza de date
+        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+        $stmt = $db->prepare('INSERT INTO users (username, password, email) VALUES (?, ?, ?)');
+        $stmt->execute([$username, $hashedPassword, $email]);
+
+        // Setează sesiunea și creează un token JWT
+        $userId = $db->lastInsertId();
+        $_SESSION['user_id'] = $userId;
+        $_SESSION['username'] = $username;
+
+        $secretKey = 'secretkey';
+        $payload = [
+            'user_id' => $userId,
+            'username' => $username,
+            'exp' => time() + 3600
+        ];
+
+        $token = JWT::encode($payload, $secretKey, 'HS256');
+
+        // Răspunde cu token-ul și userId
+        header('Content-Type: application/json');
+        echo json_encode([
+            'token' => $token,
+            'userId' => $userId
+        ]);
+        exit();
+
+    } catch (Exception $e) {
+        echo json_encode(['error' => 'Registration failed: ' . $e->getMessage()]);
+        exit();
     }
 }
 ?>
@@ -99,5 +127,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <button type="submit">Sign up</button>
         <p id="login">Already have an account? <a href="login.php">Login</a></p>
     </form>
+    <script>
+        document.querySelector('.register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const data = {
+                username: formData.get('username'),
+                password: formData.get('password'),
+                confirm_password: formData.get('confirm_password'),
+                email: formData.get('email')
+            };
+
+            const response = await fetch('register.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.token) {
+                // Salvează tokenul și userId în localStorage
+                localStorage.setItem('token', result.token);
+                localStorage.setItem('userId', result.userId);
+                window.location.href = 'index.php'; // Redirecționează la pagina principală
+            } else {
+                alert(result.error || 'Registration failed');
+            }
+        });
+    </script>
 </body>
 </html>

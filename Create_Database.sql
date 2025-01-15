@@ -64,6 +64,17 @@ CREATE TABLE group_invitations (
     FOREIGN KEY (receiverId) REFERENCES users(id)
 );
 
+CREATE TABLE last_read_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    userId INT NOT NULL,
+    conversationId INT NOT NULL,
+    lastReadMessageId INT NOT NULL,
+    FOREIGN KEY (userId) REFERENCES users(id),
+    FOREIGN KEY (conversationId) REFERENCES conversations(id),
+    FOREIGN KEY (lastReadMessageId) REFERENCES messages(id),
+    UNIQUE (userId, conversationId)
+);
+
 
 
 In caz ca ati initializat deja baza de date, actualizati-o:
@@ -111,4 +122,17 @@ CREATE TABLE group_invitations (
     FOREIGN KEY (groupId) REFERENCES conversations(id),
     FOREIGN KEY (senderId) REFERENCES users(id),
     FOREIGN KEY (receiverId) REFERENCES users(id)
+);
+
+
+
+CREATE TABLE last_read_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    userId INT NOT NULL,
+    conversationId INT NOT NULL,
+    lastReadMessageId INT NOT NULL,
+    FOREIGN KEY (userId) REFERENCES users(id),
+    FOREIGN KEY (conversationId) REFERENCES conversations(id),
+    FOREIGN KEY (lastReadMessageId) REFERENCES messages(id),
+    UNIQUE (userId, conversationId)
 );

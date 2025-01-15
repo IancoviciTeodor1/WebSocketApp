@@ -1,46 +1,92 @@
 <?php
-require '../db.php';
-
 session_start();
+require_once '../db.php';
+header('Content-Type: application/json');
+
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'User not authenticated']);
+    exit;
+}
 
 $userId = $_SESSION['user_id'];
 
-// Verifică dacă utilizatorul este autentificat
-if (!$userId) {
-    echo json_encode([]); // Trimite un array gol dacă utilizatorul nu este autentificat
-    exit();
-}
-
 try {
-    // Obține notificările pentru utilizatorul curent
-    $stmt = $db->prepare("
-        SELECT 
-            n.id, 
-            n.userId, 
-            n.type, 
-            n.referenceId, 
-            n.created_at, 
-            m.content AS message_content, 
-            m.conversationId AS conversation_id, 
-            u.username AS sender_name,
-            c.name AS group_name, -- Include numele grupului, dacă este o conversație de grup
-            c.type AS conversation_type -- Tipul conversației: 'one-on-one' sau 'group'
-        FROM notifications n
-        LEFT JOIN messages m ON n.referenceId = m.id
-        LEFT JOIN users u ON m.senderId = u.id
-        LEFT JOIN conversations c ON m.conversationId = c.id
-        WHERE n.userId = ?
-        ORDER BY n.created_at DESC
-    ");
-    $stmt->execute([$_SESSION['user_id']]);
+    // Notificări mesaje necitite excluzând conversațiile de tip self și verificând existența mesajelor necitite
+    $stmt = $db->prepare(
+        'SELECT n.referenceId AS conversationId, c.type AS conversationType, c.name AS conversationName
+         FROM notifications n
+         JOIN conversations c ON n.referenceId = c.id
+         WHERE n.userId = ? 
+           AND n.isRead = FALSE 
+           AND n.type = "message" 
+           AND c.type != "self"
+           AND EXISTS (
+               SELECT 1 
+               FROM messages m 
+               JOIN last_read_messages lrm ON lrm.conversationId = m.conversationId AND lrm.userId = ?
+               WHERE m.conversationId = n.referenceId 
+                 AND m.id > lrm.lastReadMessageId
+           )'
+    );
+    $stmt->execute([$userId, $userId]);
     $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Asigură-te că răspunsul este de tip JSON
-    header('Content-Type: application/json');
-    echo json_encode($notifications ?: []); // Trimite array gol dacă nu există notificări
+    foreach ($notifications as &$notification) {
+        $conversationId = $notification['conversationId'];
+        $conversationType = $notification['conversationType'];
 
-} catch (Exception $e) {
-    file_put_contents('debug.log', 'Error loading notifications: ' . $e->getMessage(), FILE_APPEND);
-    echo json_encode([]); // Trimite un array gol în caz de eroare
+        // Verificăm și ajustăm numele conversației
+        if ($conversationType === 'one-on-one') {
+            $stmt = $db->prepare(
+                'SELECT u.username 
+                 FROM participants p
+                 JOIN users u ON p.userId = u.id
+                 WHERE p.conversationId = ? AND p.userId != ?'
+            );
+            $stmt->execute([$conversationId, $userId]);
+            $otherUser = $stmt->fetch(PDO::FETCH_ASSOC);
+            $notification['conversationName'] = $otherUser['username'] ?? 'Unknown User';
+        }
+
+        // Selectează cele mai recente 3 mesaje necitite
+        $stmt = $db->prepare(
+            'SELECT m.id, m.content, m.timestamp, u.username 
+             FROM messages m
+             JOIN users u ON m.senderId = u.id
+             WHERE m.conversationId = ? AND m.id > (
+                 SELECT COALESCE(MAX(lastReadMessageId), 0) 
+                 FROM last_read_messages 
+                 WHERE userId = ? AND conversationId = ?
+             )
+             ORDER BY m.timestamp DESC
+             LIMIT 3'
+        );
+        $stmt->execute([$conversationId, $userId, $conversationId]);
+        $notification['unreadMessages'] = array_reverse($stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    // Notificări invitații necitite
+    $stmt = $db->prepare(
+        'SELECT gi.groupId, gi.senderId, gi.created_at, g.name AS groupName, u.username AS senderName
+         FROM notifications n
+         JOIN group_invitations gi ON gi.id = n.referenceId
+         JOIN conversations g ON gi.groupId = g.id
+         JOIN users u ON gi.senderId = u.id
+         WHERE n.userId = ? AND n.isRead = FALSE AND n.type = "invitation"'
+    );
+    $stmt->execute([$userId]);
+    $invitations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Combinați notificările
+    $response = [
+        'messages' => $notifications,
+        'invitations' => $invitations
+    ];
+
+    echo json_encode($response);
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode(['error' => $e->getMessage()]);
 }
 ?>
