@@ -439,6 +439,8 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
     <footer>
         <div class="footer-content">
             <a href="contact.php">Contact Us</a>
+            |
+            <a href="faq.php">FAQ</a>
         </div>
         <div class="footer-content">
             &copy; 2025 Wavey

@@ -44,6 +44,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
 
+        $mail->AddReplyTo($email);
         $mail->setFrom($email, $name);
         // The email address that receives all the emails
         $mail->addAddress($mail_recipient, 'Recipient Name');
@@ -58,6 +59,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             $error = 'Message could not be sent.';
         }
+
+        $mail->clearAllRecipients();
+        $mail->addAddress($email, $name);
+        $mail->Subject = 'Thank you for contacting us!';
+        $mail->Body    = "Hello $name, <br><br> Thank you for reaching out to us. We have received your message and will get back to you as soon as possible. <br><br> Your message: <br> $message <br><br> Best regards, <br> Wavey Support Team";
+        $mail->AltBody = "Hello $name, \n\n Thank you for reaching out to us. We have received your message and will get back to you as soon as possible. \n\n Your message: \n $message \n\n Best regards, \n Wavey Support Team";
+
+        $mail->send();
+
     } catch (Exception $e) {
         echo "Mailer Error: {$mail->ErrorInfo}";
     }
@@ -103,7 +113,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-radius: 5px;
         }
         textarea {
-            resize: none;
+            resize: vertical;
+            height: 130px;
         }
         input[type="submit"] {
             background-color: #4CAF50;
@@ -137,6 +148,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             width: 0;
             z-index: -1;
         }
+        a {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007BFF;
+            color: white;
+            white-space: nowrap;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        a:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -158,13 +182,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <input type="email" id="email" name="email" required>
 
             <label for="message">Message:</label>
-            <textarea id="message" name="message" required></textarea>
+            <textarea id="message" name="message" spellcheck="false" required></textarea>
 
             <label class="fkskfdfv" for="usercode"></label>
             <input class="fkskfdfv" autocomplete="off" tabindex="-1" type="text" id="usercode" name="usercode" value="">
 
             <input type="submit" value="Send Message">
         </form>
+
+        <a href="index.php">Go Back</a>
     </div>
 
 </body>
