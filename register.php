@@ -72,61 +72,100 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <title>Sign up</title>
     <style>
         body {
+            background-color: #325D75; /* Fundalul paginii */
+            color: #F1E9DB; /* Culoarea textului */
             font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 80vh; /* Full height for better centering */
-            background-color: #f0f0f0;
+            height: 100vh;
             margin: 0;
+            overflow: hidden;
+        }
+        .register-container {
+            background-color: #5DB7DE; /* Fundalul containerului */
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            z-index: 1;
+            position: relative;
         }
         .register-form {
-            background-color: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             display: flex;
-            flex-direction: column; /* Align items vertically */
-            align-items: center; /* Center align items horizontally */
+            flex-direction: column; /* Aliniere verticală a elementelor */
+            align-items: center;
         }
-        .register-form input,
-        .register-form button {
-            display: block;
+        .register-form input, .register-form button, #login a {
             width: 100%;
+            max-width: 300px;
+        }
+        .register-form input {
+            display: block;
             padding: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             border-radius: 4px;
             border: 1px solid #ccc;
-            max-width: 300px; /* Limit max width for better alignment */
-            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            background-color: #F1E9DB; /* Fundalul input-urilor */
+            color: #06020C; /* Culoarea textului input-urilor */
         }
-        .register-form button {
-            border: none;
-            background-color: #007BFF;
-            color: white;
+        .register-form button, #login a {
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #DD622E; /* Fundalul butonului */
+            color: #F1E9DB; /* Culoarea textului butonului */
             font-size: 16px;
+            text-decoration: none;
+            transition: background-color 0.3s, color 0.3s;
+            display: block;
+            text-align: center;
+            cursor: pointer;
+        }
+        .register-form button:hover, #login a:hover {
+            background-color: #06020C; /* Fundalul butonului la hover */
+            color: #F1E9DB; /* Culoarea textului butonului la hover */
         }
         #login {
             font-size: 14px;
+            color: #06020C; /* Culoarea textului */
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
         }
         .error {
             color: red;
         }
+        .background-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
-    <form class="register-form" method="POST" action="register.php">
-        <h2 align="center">Sign up</h2>
-        <?php if (isset($error)): ?>
-            <p class="error"><?= $error ?></p>
-        <?php endif; ?>
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <input type="password" name="confirm_password" placeholder="Confirm Password" required>
-        <input type="email" name="email" placeholder="Email" required>
-        <button type="submit">Sign up</button>
-        <p id="login">Already have an account? <a href="login.php">Login</a></p>
-    </form>
+    <div class="register-container">
+        <h2>Sign up</h2>
+        <form class="register-form" method="POST" action="register.php">
+            <?php if (isset($error)): ?>
+                <p class="error"><?= $error ?></p>
+            <?php endif; ?>
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <input type="password" name="confirm_password" placeholder="Confirm Password" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <button type="submit">Sign up</button>
+            <div id="login">
+                <a href="login.php">Already have an account? Login</a>
+            </div>
+        </form>
+    </div>
+
     <script>
         document.querySelector('.register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
