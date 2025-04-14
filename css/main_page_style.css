@@ -1,0 +1,373 @@
+
+button {
+    cursor: pointer;
+}
+#userList div {
+    border: 1px solid #000;
+    padding: 10px;
+    margin: 5px 0;
+    width: 92%;
+}
+#userList div:hover {
+    background-color: #00f;
+    color: #fff;
+    cursor: pointer;
+}
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #f0f0f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+header h1 {
+    margin: 0;
+}
+#content {
+    display: flex;
+    flex: 1;
+}
+#side {
+    display: inline-flex;
+    align-items: center;
+}
+.profile-btn {
+    margin-right: 10px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background-color: #2ecc71;
+    color: white;
+    white-space: nowrap;
+    text-decoration: none;
+}
+.profile-btn:hover {
+    background-color: #27ae60;
+}
+.logout-form button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background-color: #ff4c4c;
+    color: white;
+}
+.logout-form button:hover {
+    background-color: #ff3333;
+}
+.logout-form {
+    margin: 0;
+}
+
+#main {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+#sidebar {
+    width: 30%;
+    max-width: 300px;
+    border-right: 1px solid #ccc;
+    padding: 10px;
+    overflow-y: auto;
+}
+#recentConversations {
+    max-height: 50%;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+.conversation-item {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+}
+.conversation-item:hover {
+    background-color: #f0f0f0;
+}
+#userList {
+    max-height: 50%;
+    overflow-y: auto;
+}
+#conversation {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+#messages {
+    flex: 1;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 10px;
+    overflow-y: auto;
+}
+#messageInput {
+    width: calc(100% - 90px);
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+#sendButton {
+    padding: 10px;
+    border: none;
+    background-color: #4CAF50;
+    color: white;
+}
+#sendButton:hover {
+    background-color: #45a049;
+}
+
+.profile-pic {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 10px;
+    object-fit: cover;
+    border: 1px solid #fff;
+}
+.username {
+    font-weight: bold;
+}
+.message-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+.message-header {
+    display: flex;
+    align-items: center;
+}
+.message-body {
+    margin-left: 50px;
+}
+.timestamp {
+    font-size: 0.8rem;
+    color: gray;
+    margin-left: 5px;
+}
+
+#notificationContainer {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-right: 20px;
+}
+
+#notificationButton {
+    background: none;
+    border: none;
+    font-size: 24px;
+    position: relative;
+}
+
+#notificationButton::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    background: red;
+    border-radius: 50%;
+    display: none; /* Apare doar când există notificări noi */
+}
+
+#notificationButton.has-notifications::after {
+    display: block;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Stilul dropdown-ului */
+#notificationDropdown {
+    position: absolute;
+    top: 50px; /* Ajustează în funcție de poziția butonului */
+    right: 10px; /* Ajustează în funcție de poziția dorită */
+    width: 300px;
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid #ddd;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    border-radius: 8px;
+}
+
+/* Stil pentru fiecare notificare */
+#notificationList > div {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+}
+
+#notificationList > div:hover {
+    background-color: #f0f0f0;
+}
+
+/* Stil pentru textul de notificare */
+#notificationList > div b {
+    display: block;
+    font-size: 14px;
+    color: #333;
+}
+
+#groupForm {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+}
+
+.popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+}
+
+.popup h3 {
+    margin-top: 0;
+}
+
+.popup button {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.popup button:hover {
+    background-color: #0056b3;
+}
+
+.popup input {
+    margin: 10px 0;
+    padding: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.user-invite-item {
+    margin-bottom: 2px;
+}
+
+.user-invite-item label {
+    display: flex;
+    align-items: center;
+    gap: 1px; /* Mic spațiu între checkbox și nume */
+}
+
+.user-invite-item input[type="checkbox"] {
+    margin: 0; /* Elimină orice margine implicită */
+}
+
+/* Stilizarea butonului de creare grup */
+#createGroupButton {
+    background-color: #4CAF50;
+    color: white;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+#createGroupButton:hover {
+    background-color: #45a049;
+}
+
+/* Stilizarea butonului de setări grup */
+#groupSettingsButton {
+    background-color: #2196F3; /* Albastru pentru butonul de setări */
+    color: white;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+#groupSettingsButton:hover {
+    background-color: #1976D2;
+}
+
+footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 10px 0;
+    margin-top: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+footer a {
+    color: #ffcc00;
+    text-decoration: none;
+}
+footer a:hover {
+    text-decoration: underline;
+}
+footer p {
+    margin: 0;
+}
+
+
+/* Limitează dimensiunea imaginilor si videoclipurilor */
+.message-file {
+    max-width: 300px;
+    max-height: 300px;
+    object-fit: contain;
+    margin-top: 10px;
+}
+
+.message-item .message-body video {
+    max-width: 100%;
+    max-height: 300px;
+    height: auto;
+    width: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.message-thumbnail {
+    max-width: 150px;
+    max-height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin: 5px;
+    cursor: pointer;
+}
+
+.file-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 5px 0;
+}
+
+.file-icon {
+    width: 32px;
+    height: 32px;
+}

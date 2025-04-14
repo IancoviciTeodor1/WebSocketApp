@@ -39,6 +39,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebSocket Chat App</title>
+<<<<<<< Updated upstream
     <style>
         button {
             cursor: pointer;
@@ -272,6 +273,9 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         }
 
     </style>
+=======
+    <link href="/WebSocketApp/css/main_page_style.css?v=<?php echo time(); ?>" rel="stylesheet" type="text/css"/>
+>>>>>>> Stashed changes
 </head>
 <body>
     <header>
@@ -329,6 +333,9 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 <div>
                     <input type="text" id="messageInput" placeholder="Type a message">
                     <button id="sendButton" onclick="sendMessage()">Send</button>
+                    <input type="file" id="fileInput" multiple style="display: none;">
+                    <input type="button" value="Browse..." onclick="document.getElementById('fileInput').click();" />
+                    <div id="filePreview" style="margin-top: 10px;"></div>
                 </div>
             </div>
         </div>
@@ -364,19 +371,23 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 };
                 
                 socket.onmessage = event => {
-                    const message = JSON.parse(event.data);
-                    
-                    // Verificăm dacă mesajul este destinat conversației curente
-                    if (message.conversationId === currentConversationId) {
-                        displayMessage(message); // Afișăm mesajul doar dacă face parte din conversația curentă
-                        console.log('Message is displayed');
-                        console.log('Received WebSocket message:', message);
+                    const msg = JSON.parse(event.data);
 
-                    } else {
-                        console.log('Message is not for the current conversation');
+                    if (msg.conversationId === currentConversationId) {
+                        // Refacem fetch-ul complet, dar afișăm doar ultimul mesaj
+                        fetch(`http://localhost:3000/messages?conversationId=${msg.conversationId}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        })
+                        .then(response => response.json())
+                        .then(messages => {
+                            const lastMessage = messages[messages.length - 1];
+                            if (lastMessage) {
+                                displayMessage(lastMessage);
+                            }
+                        });
                     }
                 };
-                
+
                 socket.onclose = () => {
                     console.log('Disconnected from WebSocket server');
                     activeConversations.clear(); // Golim conversațiile active la deconectare
@@ -389,6 +400,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 joinConversation(conversationId);
             }
         }
+
 
         function joinConversation(conversationId) {
             if (!activeConversations.has(conversationId)) {
@@ -653,30 +665,58 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         }
 
         function displayMessage(message) {
-            const messagesDiv = document.getElementById('messages');
-            
-            const messageItem = document.createElement('div');
-            messageItem.classList.add('message-item');
-            
-            messageItem.innerHTML = `
-                <div class="message-header">
-                    <img src="${message.profile_picture}" alt="Profile Picture" class="profile-pic">
-                    <span class="username">${message.username || 'Unknown'}</span>
-                    <div class="timestamp">
-                        ${new Date(message.timestamp).toLocaleString()}
-                    </div>
-                </div>
-                <div class="message-body">
-                    ${message.content || ''}
-                </div>
-            `;
-            
-            // Adăugăm mesajul la sfârșitul conversației
-            messagesDiv.appendChild(messageItem);
+    const messagesDiv = document.getElementById('messages');
 
-            // Scroll automat pentru a vizualiza cel mai recent mesaj
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
+    const messageItem = document.createElement('div');
+    messageItem.classList.add('message-item');
+
+    // Vom construi toate fișierele într-un container separat
+    let fileContent = '';
+    if (Array.isArray(message.files) && message.files.length > 0) {
+        fileContent += `<div class="file-container">`;
+
+        message.files.forEach(file => {
+            if (file.type === 'image') {
+                fileContent += `<img src="uploads/user_files/${file.path}" alt="Attached Image" class="message-file">`;
+            } else if (file.type === 'audio') {
+                fileContent += `<audio controls><source src="uploads/user_files/${file.path}" type="audio/mpeg"></audio>`;
+            } else if (file.type === 'video') {
+                fileContent += `<video controls><source src="uploads/user_files/${file.path}" type="video/mp4"></video>`;
+            } else if (file.type === 'document') {
+                fileContent += `<div class="file-preview">
+                                    <img src="icons/pdf-icon.png" class="file-icon">
+                                    <a href="uploads/user_files/${file.path}" target="_blank">View File</a>
+                                </div>`;
+            }
+        });
+
+        fileContent += `</div>`;
+    }
+
+    messageItem.innerHTML = `
+        <div class="message-header">
+            <img src="${message.profile_picture}" alt="Profile Picture" class="profile-pic">
+            <span class="username">${message.username || 'Unknown'}</span>
+            <div class="timestamp">
+                ${new Date(message.timestamp).toLocaleString()}
+            </div>
+        </div>
+        <div class="message-body">
+            ${message.content || ''}
+            ${fileContent}
+        </div>
+    `;
+
+    messagesDiv.appendChild(messageItem);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+
+function base64ToBlob(base64, type) {
+    const binary = atob(base64);
+    const array = Uint8Array.from(binary, char => char.charCodeAt(0));
+    return new Blob([array], { type });
+}
 
 
         function handleSessionExpiry() {
@@ -724,46 +764,55 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
 
 
-        function sendMessage() {
+        async function sendMessage() {
             const userId = localStorage.getItem('userId');
             const messageInput = document.getElementById('messageInput');
             const messageContent = messageInput.value.trim();
 
-            if (!messageContent) {
-                alert('Message content cannot be empty.');
+            if (!messageContent && selectedFiles.length === 0) {
+                alert('Please write a message or attach a file.');
                 return;
             }
 
-            const payload = {
-                content: messageContent,
-                conversationId: currentConversationId || null,
-                receiverId: currentConversationId ? null : currentReceiverId,
+            const filePayloads = [];
+
+            // Convertim fișierele în base64
+            for (let file of selectedFiles) {
+                const base64 = await fileToBase64(file);
+                filePayloads.push({
+                    name: file.name,
+                    type: file.type,
+                    base64
+                });
+            }
+
+            const wsPayload = {
+                type: 'message',
+                content: messageContent || null,
+                conversationId: currentConversationId,
                 senderId: userId,
+                username: localStorage.getItem('username'),
+                files: filePayloads
             };
 
-            console.log('Payload sent to server:', payload);
-
-            // Trimitem mesajul doar prin WebSocket
+            // Trimitem mesajul prin WebSocket
             if (socket && socket.readyState === WebSocket.OPEN) {
-                const wsPayload = {
-                    type: 'message',
-                    content: messageContent,
-                    conversationId: currentConversationId,
-                    senderId: userId,
-                    username: localStorage.getItem('username'),
-                };
-
                 console.log('Sending WebSocket message:', wsPayload);
                 socket.send(JSON.stringify(wsPayload));
+
+                // Curățăm câmpurile
+                messageInput.value = '';
+                selectedFiles = [];
+                updateFilePreview();
             } else {
-                // Dacă WebSocket nu este disponibil, salvăm mesajul prin fetch
                 console.warn('WebSocket is not connected. Falling back to REST API.');
+                
                 fetch(`${BASE_URL}/api/send_message.php`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify(wsPayload),
                 })
                 .then(response => {
                     if (!response.ok) {
@@ -776,8 +825,10 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 })
                 .then(data => {
                     console.log('Message sent successfully:', data);
-                    messageInput.value = ''; // Golește câmpul de text
-                    loadMessages(data.conversationId); // Reîncarcă mesajele
+                    messageInput.value = '';
+                    selectedFiles = [];
+                    updateFilePreview();
+                    loadMessages(data.conversationId); // Doar fallback
                 })
                 .catch(error => {
                     console.error('Error sending message:', error);
@@ -785,6 +836,55 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 });
             }
         }
+
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        let selectedFiles = [];
+
+        document.getElementById('fileInput').addEventListener('change', event => {
+            const newFiles = Array.from(event.target.files);
+
+            // Adăugăm doar fișiere care nu sunt deja în listă (după nume + dimensiune)
+            newFiles.forEach(file => {
+                if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    selectedFiles.push(file);
+                }
+            });
+
+            // Resetăm inputul pentru a permite reselectarea aceluiași fișier
+            event.target.value = '';
+
+            updateFilePreview();
+        });
+
+        function updateFilePreview() {
+            const previewContainer = document.getElementById('filePreview');
+            previewContainer.innerHTML = ''; // Golește preview-ul anterior
+
+            selectedFiles.forEach((file, index) => {
+                const fileElement = document.createElement('div');
+                fileElement.className = 'file-preview';
+                fileElement.innerHTML = `
+                    <span>${file.name}</span>
+                    <button onclick="removeFile(${index})" style="margin-left: 10px;">✖</button>
+                `;
+                previewContainer.appendChild(fileElement);
+            });
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1); // Eliminăm fișierul
+            updateFilePreview();
+        }
+
 
 
         // Functia pentru trimiterea notificărilor
@@ -875,12 +975,41 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
         // Funcția pentru a comuta vizibilitatea listei de notificări
         async function loadNotifications() {
+<<<<<<< Updated upstream
             try {
                 const response = await fetch(`${BASE_URL}/api/notifications.php`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
+=======
+    try {
+        const response = await fetch(`${BASE_URL}/api/notifications.php`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch notifications');
+        }
+
+        const { messages, invitations } = await response.json();
+        const notificationList = document.getElementById('notificationList');
+        notificationList.innerHTML = '';
+
+        // Afișare notificări mesaje
+        if (messages.length > 0) {
+            messages.forEach(notification => {
+                const item = document.createElement('div');
+                item.style.padding = '10px';
+                item.style.borderBottom = '1px solid #ddd';
+
+                let notificationContent = `<b style="font-size: 18px">${notification.conversationName}</b><br>`;
+                notification.unreadMessages.forEach(msg => {
+                    notificationContent += `<b>${msg.username}:</b> ${msg.content} <br>`;
+>>>>>>> Stashed changes
                 });
 
                 if (!response.ok) {
@@ -929,6 +1058,66 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
             }
         }
 
+<<<<<<< Updated upstream
+=======
+        // Afișare notificări invitații
+        if (invitations.length > 0) {
+            invitations.forEach(invitation => {
+                const item = document.createElement('div');
+                item.style.padding = '10px';
+                item.style.borderBottom = '1px solid #ddd';
+
+                item.innerHTML = `
+                    <b>Group Invitation:</b><br>
+                    <b>Group:</b> ${invitation.groupName}<br>
+                    <b>From:</b> ${invitation.senderName}<br>
+                    <button style="background-color: green; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;" onclick="handleInvitation(${invitation.groupId}, 'accept')">Accept</button>
+                    <button style="background-color: red; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;" onclick="handleInvitation(${invitation.groupId}, 'decline')">Decline</button>
+                `;
+
+                notificationList.appendChild(item);
+            });
+        }
+
+        if (messages.length === 0 && invitations.length === 0) {
+            notificationList.innerHTML = '<p align="center">No new notifications</p>';
+            document.getElementById('notificationButton').classList.remove('has-notifications');
+        } else {
+            document.getElementById('notificationButton').classList.add('has-notifications');
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+    }
+}
+
+async function handleInvitation(groupId, action) {
+    const endpoint = action === 'accept' ? 'accept_invitation.php' : 'decline_invitation.php';
+    try {
+        const response = await fetch(`${BASE_URL}/api/${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ groupId })
+        });
+
+        if (response.ok) {
+            alert(`Invitation ${action}ed successfully!`);
+            loadNotifications();  // Refresh notifications after action
+            location.reload();
+        } else {
+            const errorData = await response.json();
+            alert(`Error: ${errorData.error}`);
+        }
+    } catch (error) {
+        console.error('Error handling invitation:', error);
+    }
+}
+
+
+
+>>>>>>> Stashed changes
 
         document.addEventListener('DOMContentLoaded', () => {
             const notificationButton = document.getElementById('notificationButton');
@@ -968,9 +1157,45 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         const groupName = document.getElementById('groupName').value.trim();
         const selectedUsers = Array.from(document.querySelectorAll('#selectedUserList li')).map(item => item.getAttribute('data-user-id'));
 
+<<<<<<< Updated upstream
         if (!groupName || selectedUsers.length === 0) {
             alert('Please enter a group name and select at least one user.');
             return;
+=======
+                if (!groupName || selectedUsers.length === 0) {
+                    alert('Please enter a group name and select at least one user.');
+                    return;
+                }
+
+                // Trimitem datele pentru crearea grupului
+                fetch(`${BASE_URL}/api/create_group.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ groupName, selectedUsers })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Group created successfully.');
+                            // Trimite invitațiile către toți utilizatorii selectați
+                            // sendInvitations(data.groupId, selectedUsers);
+                            groupForm.classList.add('hidden');
+                            // location.reload();
+                        } else {
+                            alert('Error creating group: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error creating group:', error);
+                    });
+            });
+        });
+
+        // Funcție pentru căutarea utilizatorilor
+        function searchInvitationUsers() {
+            const searchQuery = document.getElementById('groupSearchInput').value.trim();
+            loadUserList(searchQuery);
+>>>>>>> Stashed changes
         }
 
         // Trimitem datele pentru crearea grupului
@@ -1106,7 +1331,7 @@ function sendInvitations(groupId, selectedUsers) {
         }
 
         // Încarcă notificările periodic
-        setInterval(loadNotifications, 10000);
+        setInterval(loadNotifications, 1000);
         loadNotifications(); // Încarcă notificările imediat ce se încarcă pagina
 
         console.log(currentUsername);
