@@ -37,36 +37,54 @@ $profile_picture = $row['profile_picture'] ? $row['profile_picture'] : 'uploads/
         }
 
         body {
+            background-color: #325D75; /* Fundalul paginii */
+            color: #F1E9DB; /* Culoarea textului */
             font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #f4f4f4;
+            margin: 0;
+            overflow: hidden;
         }
 
         .profile-container {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            grid-gap: 20px;
-            background-color: #fff;
+            display: flex;
+            background-color: #5DB7DE; /* Fundalul containerului */
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             width: 80%;
             max-width: 1000px;
         }
 
-        .profile-img-container {
-            display: flex;
-            justify-content: center;
-            align-items: start;
-        }
-
         .profile-left {
+            width: 30%;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            margin-right: 20px; /* Adaugă spațiu între zona de butoane și zona de formulare */
+        }
+
+        .profile-right {
+            width: 70%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            background-color: #A7D0DD; /* Fundalul zonei de formulare */
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .profile-right.active {
+            display: flex;
+        }
+
+        .profile-img-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
         }
 
         .profile-img {
@@ -79,16 +97,33 @@ $profile_picture = $row['profile_picture'] ? $row['profile_picture'] : 'uploads/
             transition: transform 0.3s ease-in-out;
         }
 
-        .profile-right {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+        button, a {
+            padding: 10px;
+            background-color: #DD622E; /* Fundalul butonului */
+            color: #F1E9DB; /* Culoarea textului butonului */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 10px;
+            text-align: center;
+            text-decoration: none;
+            transition: background-color 0.3s, color 0.3s;
+            width: 100%; /* Asigură-te că butoanele au aceeași lățime */
+            max-width: 300px; /* Setează o lățime maximă pentru butoane */
         }
 
-        h2 {
-            margin-bottom: 20px;
-            font-size: 24px;
-            color: #333;
+        button:hover, a:hover {
+            background-color: #06020C; /* Fundalul butonului la hover */
+            color: #F1E9DB; /* Culoarea textului butonului la hover */
+        }
+
+        .small-button {
+            width: 90%; /* Setează lățimea la 90% pentru butonul mic */
+            max-width: 270px; /* Ajustează lățimea maximă pentru butonul mic */
+            padding: 10px; /* Ajustează padding-ul pentru butonul mic */
+            font-size: 16px; /* Ajustează dimensiunea fontului pentru butonul mic */
+            margin: 0 auto; /* Centrează butonul */
         }
 
         form {
@@ -99,7 +134,7 @@ $profile_picture = $row['profile_picture'] ? $row['profile_picture'] : 'uploads/
         label {
             font-size: 16px;
             margin-bottom: 5px;
-            color: #555;
+            color: #06020C; /* Culoarea textului */
         }
 
         input {
@@ -108,20 +143,8 @@ $profile_picture = $row['profile_picture'] ? $row['profile_picture'] : 'uploads/
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
-        }
-
-        button {
-            padding: 10px;
-            background-color: #007BFF;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:hover {
-            background-color: #0056b3;
+            background-color: #F1E9DB; /* Fundalul input-urilor */
+            color: #06020C; /* Culoarea textului input-urilor */
         }
 
         hr {
@@ -130,44 +153,36 @@ $profile_picture = $row['profile_picture'] ? $row['profile_picture'] : 'uploads/
             margin: 20px 0;
         }
 
-        a {
-            align-self: flex-start;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            background-color: #007BFF;
-            color: white;
-            white-space: nowrap;
-            text-decoration: none;
-            font-size: 16px;
-        }
-
-        a:hover {
-            background-color: #0056b3;
+        .error-message {
+            margin-top: 5px;
+            color: red;
         }
 
         .success-message {
             margin-top: 5px;
             color: green;
         }
-
-        .error-message {
-            margin-top: 5px;
-            color: red;
-        }
-
     </style>
 </head>
 <body>
     <div class="profile-container">
-        <div class="profile-left">            
+        <div class="profile-left">
             <div class="profile-img-container">
                 <img src="<?php echo $profile_picture; ?>" alt="Profile Picture" class="profile-img">
-                <form action="upload_profile_pic.php" method="POST" enctype="multipart/form-data" target="_self">
-                    <label for="profile_pic">Upload Profile Picture:</label>
-                    <input type="file" name="profile_pic" id="profile_pic" accept="image/*" onchange="validateFileType()">
-                    <button type="submit" name="submit">Upload</button>
-                    <p id="pfp_status" class="<?php
+                <button onclick="showForm('profile-pic')">Upload Profile Picture</button>
+            </div>
+            <button onclick="showForm('username')">Change Username</button>
+            <button onclick="showForm('email')">Change Email</button>
+            <button onclick="showForm('password')">Change Password</button>
+            <a href="index.php" class="small-button">Go Back</a>
+        </div>
+
+        <div class="profile-right" id="profile-pic-form">
+            <form action="upload_profile_pic.php" method="POST" enctype="multipart/form-data" target="_self">
+                <label for="profile_pic">Upload Profile Picture:</label>
+                <input type="file" name="profile_pic" id="profile_pic" accept="image/*" onchange="validateFileType()">
+                <button type="submit" name="submit">Upload</button>
+                <p id="pfp_status" class="<?php
                         if (isset($_SESSION['pfpError'])) {
                             if ($_SESSION['pfpError']) {
                                 echo "error-message";
@@ -184,14 +199,11 @@ $profile_picture = $row['profile_picture'] ? $row['profile_picture'] : 'uploads/
                             }
                         ?>
                     </p>
-                </form>
-            </div>
-
-            <a href="index.php">Go Back</a>
+            </form>
         </div>
 
-        <div class="profile-right">
-            <form onsubmit="return validateUsername()" action="change_username.php" method="POST" target="_self">
+        <div class="profile-right" id="username-form">
+            <form action="change_username.php" method="POST" onsubmit="return validateUsername()" target="_self">
                 <label for="new_username">Username: </label>
                 <input type="text" id="new_username" name="new_username" value="<?php echo htmlspecialchars($username); ?>" required><br>
                 <button type="submit" name="submit">Change username</button>
@@ -213,9 +225,9 @@ $profile_picture = $row['profile_picture'] ? $row['profile_picture'] : 'uploads/
                     ?>
                 </p>
             </form>
+        </div>
 
-            <hr>
-    
+        <div class="profile-right" id="email-form">
             <form action="change_email.php" method="POST" target="_self">
                 <label for="new_email">Email: </label>
                 <input type="email" id="new_email" name="new_email" value="<?php echo htmlspecialchars($email); ?>" required><br>
@@ -238,19 +250,19 @@ $profile_picture = $row['profile_picture'] ? $row['profile_picture'] : 'uploads/
                     ?>
                 </p>
             </form>
+        </div>
 
-            <hr>
-    
-            <form onsubmit="return validatePasswordChangeForm()" action="change_password.php" method="POST" target="_self">
+        <div class="profile-right" id="password-form">
+            <form action="change_password.php" method="POST" onsubmit="return validatePasswordChangeForm()" target="_self">
                 <label for="current_password">Current Password:</label>
                 <input type="password" id="current_password" name="current_password" required><br>
-    
+
                 <label for="new_password">New Password:</label>
                 <input type="password" id="new_password" name="new_password" required><br>
-    
+
                 <label for="confirm_password">Confirm New Password:</label>
                 <input type="password" id="confirm_password" name="confirm_password" required><br>
-    
+
                 <button type="submit" name="submit">Change Password</button>
 
                 <p id="password_status" class="<?php
@@ -275,6 +287,21 @@ $profile_picture = $row['profile_picture'] ? $row['profile_picture'] : 'uploads/
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const activeForm = localStorage.getItem('activeForm');
+            if (activeForm) {
+                showForm(activeForm);
+            }
+        });
+
+        function showForm(formId) {
+            document.querySelectorAll('.profile-right').forEach(form => {
+                form.classList.remove('active');
+            });
+            document.getElementById(formId + '-form').classList.add('active');
+            localStorage.setItem('activeForm', formId);
+        }
+        
         function validateFileType() {
             const fileInput = document.getElementById('profile_pic');
             const filePath = fileInput.value;
