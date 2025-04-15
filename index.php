@@ -39,341 +39,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebSocket Chat App</title>
-    <style>
-        button {
-            cursor: pointer;
-        }
-        #userList div {
-            border: 1px solid #000;
-            padding: 10px;
-            margin: 5px 0;
-            width: 92%;
-        }
-        #userList div:hover {
-            background-color: #00f;
-            color: #fff;
-            cursor: pointer;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: #f0f0f0;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        header h1 {
-            margin: 0;
-        }
-        #content {
-            display: flex;
-            flex: 1;
-        }
-        #side {
-            display: inline-flex;
-            align-items: center;
-        }
-        .profile-btn {
-            margin-right: 10px;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            background-color: #2ecc71;
-            color: white;
-            white-space: nowrap;
-            text-decoration: none;
-        }
-        .profile-btn:hover {
-            background-color: #27ae60;
-        }
-        .logout-form button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            background-color: #ff4c4c;
-            color: white;
-        }
-        .logout-form button:hover {
-            background-color: #ff3333;
-        }
-        .logout-form {
-            margin: 0;
-        }
-
-        #main {
-            flex: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-        }
-        #sidebar {
-            width: 30%;
-            max-width: 300px;
-            border-right: 1px solid #ccc;
-            padding: 10px;
-            overflow-y: auto;
-        }
-        #recentConversations {
-            max-height: 50%;
-            overflow-y: auto;
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-bottom: 20px;
-        }
-        .conversation-item {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-            cursor: pointer;
-        }
-        .conversation-item:hover {
-            background-color: #f0f0f0;
-        }
-        #userList {
-            max-height: 50%;
-            overflow-y: auto;
-        }
-        #conversation {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        #messages {
-            flex: 1;
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-bottom: 10px;
-            overflow-y: auto;
-        }
-        #messageInput {
-            width: calc(100% - 90px);
-            padding: 10px;
-            border: 1px solid #ccc;
-        }
-        #sendButton {
-            padding: 10px;
-            border: none;
-            background-color: #4CAF50;
-            color: white;
-        }
-        #sendButton:hover {
-            background-color: #45a049;
-        }
-
-        .profile-pic {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            margin-right: 10px;
-            object-fit: cover;
-            border: 1px solid #fff;
-        }
-        .username {
-            font-weight: bold;
-        }
-        .message-item {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            margin-bottom: 10px;
-        }
-        .message-header {
-            display: flex;
-            align-items: center;
-        }
-        .message-body {
-            margin-left: 50px;
-        }
-        .timestamp {
-            font-size: 0.8rem;
-            color: gray;
-            margin-left: 5px;
-        }
-
-        #notificationContainer {
-            position: relative;
-            display: flex;
-            align-items: center;
-            margin-right: 20px;
-        }
-
-        #notificationButton {
-            background: none;
-            border: none;
-            font-size: 24px;
-            position: relative;
-        }
-
-        #notificationButton::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 10px;
-            height: 10px;
-            background: red;
-            border-radius: 50%;
-            display: none; /* Apare doar când există notificări noi */
-        }
-
-        #notificationButton.has-notifications::after {
-            display: block;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        /* Stilul dropdown-ului */
-        #notificationDropdown {
-            position: absolute;
-            top: 50px; /* Ajustează în funcție de poziția butonului */
-            right: 10px; /* Ajustează în funcție de poziția dorită */
-            width: 300px;
-            max-height: 400px;
-            overflow-y: auto;
-            background-color: white;
-            border: 1px solid #ddd;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            border-radius: 8px;
-        }
-
-        /* Stil pentru fiecare notificare */
-        #notificationList > div {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-            cursor: pointer;
-        }
-
-        #notificationList > div:hover {
-            background-color: #f0f0f0;
-        }
-
-        /* Stil pentru textul de notificare */
-        #notificationList > div b {
-            display: block;
-            font-size: 14px;
-            color: #333;
-        }
-
-        #groupForm {
-            margin-top: 10px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            background-color: #f9f9f9;
-        }
-
-        .popup {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-        }
-
-        .popup h3 {
-            margin-top: 0;
-        }
-
-        .popup button {
-            margin-top: 10px;
-            padding: 8px 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .popup button:hover {
-            background-color: #0056b3;
-        }
-
-        .popup input {
-            margin: 10px 0;
-            padding: 8px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .user-invite-item {
-            margin-bottom: 2px;
-        }
-
-        .user-invite-item label {
-            display: flex;
-            align-items: center;
-            gap: 1px; /* Mic spațiu între checkbox și nume */
-        }
-
-        .user-invite-item input[type="checkbox"] {
-            margin: 0; /* Elimină orice margine implicită */
-        }
-
-        /* Stilizarea butonului de creare grup */
-        #createGroupButton {
-            background-color: #4CAF50;
-            color: white;
-            padding: 7px 14px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: background-color 0.3s ease;
-        }
-
-        #createGroupButton:hover {
-            background-color: #45a049;
-        }
-
-        /* Stilizarea butonului de setări grup */
-        #groupSettingsButton {
-            background-color: #2196F3; /* Albastru pentru butonul de setări */
-            color: white;
-            padding: 7px 14px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: background-color 0.3s ease;
-        }
-
-        #groupSettingsButton:hover {
-            background-color: #1976D2;
-        }
-
-        footer {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 10px 0;
-            margin-top: 50px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-        }
-        footer a {
-            color: #ffcc00;
-            text-decoration: none;
-        }
-        footer a:hover {
-            text-decoration: underline;
-        }
-        footer p {
-            margin: 0;
-        }
-    </style>
+    <link href="/WebSocketApp/css/main_page_style.css?v=<?php echo time(); ?>" rel="stylesheet" type="text/css"/>
 </head>
 <body>
     <header>
@@ -431,6 +97,9 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 <div>
                     <input type="text" id="messageInput" placeholder="Type a message">
                     <button id="sendButton" onclick="sendMessage()">Send</button>
+                    <input type="file" id="fileInput" multiple style="display: none;">
+                    <input type="button" value="Browse..." onclick="document.getElementById('fileInput').click();" />
+                    <div id="filePreview" style="margin-top: 10px;"></div>
                 </div>
             </div>
         </div>
@@ -477,19 +146,23 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 };
                 
                 socket.onmessage = event => {
-                    const message = JSON.parse(event.data);
-                    
-                    // Verificăm dacă mesajul este destinat conversației curente
-                    if (message.conversationId === currentConversationId) {
-                        displayMessage(message); // Afișăm mesajul doar dacă face parte din conversația curentă
-                        console.log('Message is displayed');
-                        console.log('Received WebSocket message:', message);
+                    const msg = JSON.parse(event.data);
 
-                    } else {
-                        console.log('Message is not for the current conversation');
+                    if (msg.conversationId === currentConversationId) {
+                        // Refacem fetch-ul complet, dar afișăm doar ultimul mesaj
+                        fetch(`http://localhost:3000/messages?conversationId=${msg.conversationId}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        })
+                        .then(response => response.json())
+                        .then(messages => {
+                            const lastMessage = messages[messages.length - 1];
+                            if (lastMessage) {
+                                displayMessage(lastMessage);
+                            }
+                        });
                     }
                 };
-                
+
                 socket.onclose = () => {
                     console.log('Disconnected from WebSocket server');
                     activeConversations.clear(); // Golim conversațiile active la deconectare
@@ -502,6 +175,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 joinConversation(conversationId);
             }
         }
+
 
         function joinConversation(conversationId) {
             if (!activeConversations.has(conversationId)) {
@@ -661,6 +335,15 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
             document.getElementById('searchButton').addEventListener('click', searchUsers);
         });
 
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('messageInput').addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            });
+        });
+
 
         function markMessagesAsRead(conversationId, lastReadMessageId) {
             const userId = localStorage.getItem('userId');
@@ -770,10 +453,33 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
         function displayMessage(message) {
             const messagesDiv = document.getElementById('messages');
-            
+
             const messageItem = document.createElement('div');
             messageItem.classList.add('message-item');
-            
+
+            // Vom construi toate fișierele într-un container separat
+            let fileContent = '';
+            if (Array.isArray(message.files) && message.files.length > 0) {
+                fileContent += `<div class="file-container">`;
+
+                message.files.forEach(file => {
+                    if (file.type === 'image') {
+                        fileContent += `<img src="uploads/user_files/${file.path}" alt="Attached Image" class="message-file">`;
+                    } else if (file.type === 'audio') {
+                        fileContent += `<audio controls><source src="uploads/user_files/${file.path}" type="audio/mpeg"></audio>`;
+                    } else if (file.type === 'video') {
+                        fileContent += `<video controls><source src="uploads/user_files/${file.path}" type="video/mp4"></video>`;
+                    } else if (file.type === 'document') {
+                        fileContent += `<div class="file-preview">
+                                            <img src="icons/pdf-icon.png" class="file-icon">
+                                            <a href="uploads/user_files/${file.path}" target="_blank">View File</a>
+                                        </div>`;
+                    }
+                });
+
+                fileContent += `</div>`;
+            }
+
             messageItem.innerHTML = `
                 <div class="message-header">
                     <img src="${message.profile_picture}" alt="Profile Picture" class="profile-pic">
@@ -784,14 +490,19 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 </div>
                 <div class="message-body">
                     ${message.content || ''}
+                    ${fileContent}
                 </div>
             `;
-            
-            // Adăugăm mesajul la sfârșitul conversației
-            messagesDiv.appendChild(messageItem);
 
-            // Scroll automat pentru a vizualiza cel mai recent mesaj
+            messagesDiv.appendChild(messageItem);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+
+        function base64ToBlob(base64, type) {
+            const binary = atob(base64);
+            const array = Uint8Array.from(binary, char => char.charCodeAt(0));
+            return new Blob([array], { type });
         }
 
 
@@ -840,46 +551,55 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
 
 
-        function sendMessage() {
+        async function sendMessage() {
             const userId = localStorage.getItem('userId');
             const messageInput = document.getElementById('messageInput');
             const messageContent = messageInput.value.trim();
 
-            if (!messageContent) {
-                alert('Message content cannot be empty.');
+            if (!messageContent && selectedFiles.length === 0) {
+                alert('Please write a message or attach a file.');
                 return;
             }
 
-            const payload = {
-                content: messageContent,
-                conversationId: currentConversationId || null,
-                receiverId: currentConversationId ? null : currentReceiverId,
+            const filePayloads = [];
+
+            // Convertim fișierele în base64
+            for (let file of selectedFiles) {
+                const base64 = await fileToBase64(file);
+                filePayloads.push({
+                    name: file.name,
+                    type: file.type,
+                    base64
+                });
+            }
+
+            const wsPayload = {
+                type: 'message',
+                content: messageContent || null,
+                conversationId: currentConversationId,
                 senderId: userId,
+                username: localStorage.getItem('username'),
+                files: filePayloads
             };
 
-            console.log('Payload sent to server:', payload);
-
-            // Trimitem mesajul doar prin WebSocket
+            // Trimitem mesajul prin WebSocket
             if (socket && socket.readyState === WebSocket.OPEN) {
-                const wsPayload = {
-                    type: 'message',
-                    content: messageContent,
-                    conversationId: currentConversationId,
-                    senderId: userId,
-                    username: localStorage.getItem('username'),
-                };
-
                 console.log('Sending WebSocket message:', wsPayload);
                 socket.send(JSON.stringify(wsPayload));
+
+                // Curățăm câmpurile
+                messageInput.value = '';
+                selectedFiles = [];
+                updateFilePreview();
             } else {
-                // Dacă WebSocket nu este disponibil, salvăm mesajul prin fetch
                 console.warn('WebSocket is not connected. Falling back to REST API.');
+                
                 fetch(`${BASE_URL}/api/send_message.php`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify(wsPayload),
                 })
                 .then(response => {
                     if (!response.ok) {
@@ -892,8 +612,10 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 })
                 .then(data => {
                     console.log('Message sent successfully:', data);
-                    messageInput.value = ''; // Golește câmpul de text
-                    loadMessages(data.conversationId); // Reîncarcă mesajele
+                    messageInput.value = '';
+                    selectedFiles = [];
+                    updateFilePreview();
+                    loadMessages(data.conversationId); // Doar fallback
                 })
                 .catch(error => {
                     console.error('Error sending message:', error);
@@ -901,6 +623,55 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 });
             }
         }
+
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        let selectedFiles = [];
+
+        document.getElementById('fileInput').addEventListener('change', event => {
+            const newFiles = Array.from(event.target.files);
+
+            // Adăugăm doar fișiere care nu sunt deja în listă (după nume + dimensiune)
+            newFiles.forEach(file => {
+                if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    selectedFiles.push(file);
+                }
+            });
+
+            // Resetăm inputul pentru a permite reselectarea aceluiași fișier
+            event.target.value = '';
+
+            updateFilePreview();
+        });
+
+        function updateFilePreview() {
+            const previewContainer = document.getElementById('filePreview');
+            previewContainer.innerHTML = ''; // Golește preview-ul anterior
+
+            selectedFiles.forEach((file, index) => {
+                const fileElement = document.createElement('div');
+                fileElement.className = 'file-preview';
+                fileElement.innerHTML = `
+                    <span>${file.name}</span>
+                    <button onclick="removeFile(${index})" style="margin-left: 10px;">✖</button>
+                `;
+                previewContainer.appendChild(fileElement);
+            });
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1); // Eliminăm fișierul
+            updateFilePreview();
+        }
+
 
 
         // Functia pentru trimiterea notificărilor
@@ -1014,7 +785,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 item.style.padding = '10px';
                 item.style.borderBottom = '1px solid #ddd';
 
-                let notificationContent = `<b>Conversation ${notification.conversationName}:</b><br>`;
+                let notificationContent = `<b style="font-size: 18px">${notification.conversationName}</b><br>`;
                 notification.unreadMessages.forEach(msg => {
                     notificationContent += `<b>${msg.username}:</b> ${msg.content} <br>`;
                 });
@@ -1041,8 +812,8 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                     <b>Group Invitation:</b><br>
                     <b>Group:</b> ${invitation.groupName}<br>
                     <b>From:</b> ${invitation.senderName}<br>
-                    <button onclick="handleInvitation(${invitation.groupId}, 'accept')">Accept</button>
-                    <button onclick="handleInvitation(${invitation.groupId}, 'decline')">Decline</button>
+                    <button style="background-color: green; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;" onclick="handleInvitation(${invitation.groupId}, 'accept')">Accept</button>
+                    <button style="background-color: red; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;" onclick="handleInvitation(${invitation.groupId}, 'decline')">Decline</button>
                 `;
 
                 notificationList.appendChild(item);
@@ -1075,6 +846,7 @@ async function handleInvitation(groupId, action) {
         if (response.ok) {
             alert(`Invitation ${action}ed successfully!`);
             loadNotifications();  // Refresh notifications after action
+            location.reload();
         } else {
             const errorData = await response.json();
             alert(`Error: ${errorData.error}`);
@@ -1140,8 +912,9 @@ async function handleInvitation(groupId, action) {
                         if (data.success) {
                             alert('Group created successfully.');
                             // Trimite invitațiile către toți utilizatorii selectați
-                            sendInvitations(data.groupId, selectedUsers);
+                            // sendInvitations(data.groupId, selectedUsers);
                             groupForm.classList.add('hidden');
+                            // location.reload();
                         } else {
                             alert('Error creating group: ' + data.error);
                         }
@@ -1438,7 +1211,7 @@ function inviteUsersToGroup(conversationId) {
         
 
         // Încarcă notificările periodic
-        setInterval(loadNotifications, 10000);
+        setInterval(loadNotifications, 1000);
         loadNotifications(); // Încarcă notificările imediat ce se încarcă pagina
 
         console.log(currentUsername);

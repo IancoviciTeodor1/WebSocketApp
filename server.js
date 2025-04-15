@@ -16,6 +16,11 @@ const messages = [];
 const secret = crypto.randomBytes(64).toString('hex');
 const SECRET_KEY = 'secretkey'; // Definește cheia ta secretă constantă pentru JWT
 
+
+const fs = require('fs');
+const path = require('path');
+
+
 // Middleware pentru autentificare cu token JWT
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -152,27 +157,48 @@ initializeDatabase().then(connection => {
         const { conversationId } = req.query;
         try {
             const [rows] = await db.execute(
-                `SELECT m.*, u.username, u.profile_picture FROM messages m
+                `SELECT m.id AS messageId, m.content, m.timestamp, m.senderId,
+                        u.username, u.profile_picture,
+                        mf.filePath, mf.fileType, mf.fileExtension
+                 FROM messages m
                  JOIN users u ON m.senderId = u.id
+                 LEFT JOIN media_files mf ON m.id = mf.messageId
                  WHERE m.conversationId = ?
                  ORDER BY m.timestamp`,
                 [conversationId]
             );
-
-            const formattedMessages = rows.map(msg => ({
-                id: msg.id,
-                username: msg.username,
-                content: msg.content,
-                timestamp: msg.timestamp,
-                profile_picture: msg.profile_picture || 'default.jpg'
-            }));
-            res.json(formattedMessages);
+    
+            const messagesMap = new Map();
+    
+            for (const row of rows) {
+                if (!messagesMap.has(row.messageId)) {
+                    messagesMap.set(row.messageId, {
+                        id: row.messageId,
+                        username: row.username,
+                        content: row.content,
+                        timestamp: row.timestamp,
+                        profile_picture: row.profile_picture || 'default.jpg',
+                        files: []
+                    });
+                }
+    
+                if (row.filePath) {
+                    messagesMap.get(row.messageId).files.push({
+                        path: row.filePath,
+                        type: row.fileType,
+                        extension: row.fileExtension
+                    });
+                }
+            }
+    
+            const groupedMessages = Array.from(messagesMap.values());
+            res.json(groupedMessages);
         } catch (error) {
             console.error('Error fetching messages:', error);
             res.status(500).json({ error: 'Internal server error' });
         }
     });
-
+    
     app.post('/messages', authenticateToken, async (req, res) => {
         const { conversationId, senderId, content } = req.body;
         try {
@@ -205,7 +231,7 @@ initializeDatabase().then(connection => {
                     console.log(`No active conversation to leave for socket`);
                 }
             } else if (data.type === 'message') {
-                const { conversationId, content, senderId, username } = data;
+                const { conversationId, content, senderId, username, files = [] } = data;
     
                 console.log(`Message sent in conversation ${conversationId}: ${content}`);
     
@@ -216,6 +242,23 @@ initializeDatabase().then(connection => {
                         [conversationId, senderId, content]
                     );
                     const messageId = result.insertId;
+
+                    // Salvăm fiecare fișier
+                    for (const file of files) {
+                        const { name, type, base64 } = file;
+                        const extension = path.extname(name).slice(1);
+                        const buffer = Buffer.from(base64, 'base64');
+                        const fileName = `${Date.now()}_${name}`;
+                        const filePath = path.join(__dirname, 'uploads/user_files', fileName);
+
+                        fs.writeFileSync(filePath, buffer);
+
+                        await db.execute(
+                            `INSERT INTO media_files (messageId, filePath, fileType, fileExtension)
+                            VALUES (?, ?, ?, ?)`,
+                            [messageId, fileName, mapMimeToType(type), extension]
+                        );
+                    }
 
                     // Actualizăm ultimul mesaj citit pentru expeditor
                     await db.execute(
@@ -349,3 +392,10 @@ initializeDatabase().then(connection => {
 }).catch(err => {
     console.error('Error connecting to the database:', err);
 });
+
+function mapMimeToType(mime) {
+    if (mime.startsWith('image/')) return 'image';
+    if (mime.startsWith('video/')) return 'video';
+    if (mime.startsWith('audio/')) return 'audio';
+    return 'document';
+}

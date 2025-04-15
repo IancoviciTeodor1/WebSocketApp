@@ -12,28 +12,33 @@ if (!$conversationId || empty($userIds)) {
 }
 
 try {
-    // Obține ID-ul utilizatorului curent
     session_start();
     $senderId = $_SESSION['user_id'];
 
+    // Pregătim interogările
+    $stmtCheck = $db->prepare("SELECT COUNT(*) FROM group_invitations WHERE groupId = ? AND receiverId = ?");
     $stmtInvite = $db->prepare("INSERT INTO group_invitations (groupId, senderId, receiverId) VALUES (?, ?, ?)");
     $stmtNotify = $db->prepare("INSERT INTO notifications (userId, type, referenceId) VALUES (?, 'invitation', ?)");
 
-    // Trimite invitațiile și notificările pentru fiecare utilizator
     foreach ($userIds as $userId) {
+        // Verifică dacă deja există o invitație
+        $stmtCheck->execute([$conversationId, $userId]);
+        $invitationExists = $stmtCheck->fetchColumn();
+
+        if ($invitationExists) {
+            continue; // Sari peste acest utilizator dacă există deja o invitație
+        }
+
         // Adăugăm invitația
         $stmtInvite->execute([$conversationId, $senderId, $userId]);
-
-        // Obține ID-ul invitației
         $invitationId = $db->lastInsertId();
 
-        // Trimitem notificarea pentru utilizatorul invitat
+        // Trimitem notificarea
         $stmtNotify->execute([$userId, $invitationId]);
     }
 
     echo json_encode(['status' => 'success', 'message' => 'Users invited successfully']);
 } catch (PDOException $e) {
-
     echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
 }
 ?>
