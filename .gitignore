@@ -4,4 +4,18 @@ uploads/profile_pics/*.png
 
 !uploads/profile_pics/default.jpg
 
+uploads/user_files/*.jpg
+uploads/user_files/*.jpeg
+uploads/user_files/*.png
+uploads/user_files/*.webp
+uploads/user_files/*.gif
+uploads/user_files/*.mp4
+uploads/user_files/*.mkv
+uploads/user_files/*.mp3
+uploads/user_files/*.pdf
+uploads/user_files/*.doc
+uploads/user_files/*.docx
+uploads/user_files/*.ppt
+uploads/user_files/*.pptx
+
 .env

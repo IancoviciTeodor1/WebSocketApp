@@ -689,34 +689,6 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         }
 
 
-
-        function markMessagesAsRead(conversationId, lastReadMessageId) {
-            const userId = localStorage.getItem('userId');
-            console.log({ userId, conversationId, lastReadMessageId });
-
-
-            fetch(`${BASE_URL}/api/mark_messages_as_read.php`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ userId, conversationId, lastReadMessageId }),
-            })
-            .then(response => {
-                console.log(response);  // Log
-                if (!response.ok) {
-                    return response.text().then(err => {
-                        console.error('Error response text:', err);
-                        throw new Error(`HTTP Error: ${response.status}`);
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error marking messages as read:', error);
-            });
-        }
-
-
         // Function to open or create a conversation
         function openUserConversation(receiverId) {
             currentReceiverId = receiverId;
@@ -766,17 +738,6 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
             // Încarcă mesajele pentru conversația selectată
             if (conversationId) {
                 console.log(`Loading conversation ID=${conversationId}`);
-                
-                loadMessages(conversationId).then(lastMessageId => {
-                    // Marchează mesajele ca citite
-                    if (lastMessageId) {
-                        markMessagesAsRead(conversationId, lastMessageId);
-                    }
-                    else {
-                        // Dacă nu sunt mesaje, folosim un ID fix pentru a testa funcția
-                        markMessagesAsRead(conversationId, 1); // ID-ul 1 ca test
-                    }
-                });
                 
                 loadMessages(conversationId).then(lastMessageId => {
                     // Marchează mesajele ca citite
@@ -874,38 +835,8 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                     console.error('Failed to load messages:', error);
                     reject(error);
                 });
-            return new Promise((resolve, reject) => {
-                fetch(`http://localhost:3000/messages?conversationId=${conversationId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-                .then(response => response.json())
-                .then(messages => {
-                    const messagesDiv = document.getElementById('messages');
-                    messagesDiv.innerHTML = ''; // Curățăm mesajele existente
-                    
-                    messages.forEach(message => {
-                        displayMessage(message); // Afișăm fiecare mesaj existent
-                    });
-
-                    console.log("Messages loaded:", messages); // Adaugă logul pentru debug
-
-                    // Returnăm ID-ul ultimului mesaj
-                    if (messages.length > 0) {
-                        console.log("Last message ID:", messages[messages.length - 1].id);
-                        resolve(messages[messages.length - 1].id);
-                    } else {
-                        console.log("No messages found.");
-                        resolve(null);
-                    }
-
-                })
-                .catch(error => {
-                    console.error('Failed to load messages:', error);
-                    reject(error);
-                });
             });
         }
-
 
 
 
@@ -928,7 +859,6 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
             console.log('Payload sent to server:', payload);
 
-            // Trimitem mesajul doar prin WebSocket
             // Trimitem mesajul doar prin WebSocket
             if (socket && socket.readyState === WebSocket.OPEN) {
                 const wsPayload = {
@@ -969,56 +899,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                     console.error('Error sending message:', error);
                     alert('Failed to send message.');
                 });
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(err => {
-                            console.error('Error response text:', err);
-                            throw new Error(`HTTP Error: ${response.status}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Message sent successfully:', data);
-                    messageInput.value = ''; // Golește câmpul de text
-                    loadMessages(data.conversationId); // Reîncarcă mesajele
-                })
-                .catch(error => {
-                    console.error('Error sending message:', error);
-                    alert('Failed to send message.');
-                });
             }
-        }
-
-
-        // Functia pentru trimiterea notificărilor
-        function sendNotification(messageId) {
-            const participants = getParticipantsForMessage(messageId); // Funcție care obține participanții
-            participants.forEach(participant => {
-                // Trimite notificarea pentru fiecare participant
-                fetch(`${BASE_URL}/api/send_notification.php`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        userId: participant.userId,
-                        type: 'message',
-                        referenceId: messageId, // Folosim acum ID-ul mesajului
-                    }),
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(err => {
-                            console.error('Error response text:', err);
-                            throw new Error(`Notification error: ${response.status}`);
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error sending notification:', error);
-                });
-            });
         }
 
 
@@ -1125,9 +1006,6 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         const { messages, invitations } = await response.json();
         const notificationList = document.getElementById('notificationList');
         notificationList.innerHTML = '';
-                const notifications = await response.json();
-                const notificationList = document.getElementById('notificationList');
-                notificationList.innerHTML = '';
 
         // Afișare notificări mesaje
         if (messages.length > 0) {
@@ -1135,14 +1013,6 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 const item = document.createElement('div');
                 item.style.padding = '10px';
                 item.style.borderBottom = '1px solid #ddd';
-                if (notifications.length === 0) {
-                    notificationList.innerHTML = '<p>No new notifications</p>';
-                    document.getElementById('notificationButton').classList.remove('has-notifications');
-                } else {
-                    notifications.forEach(notification => {
-                        const item = document.createElement('div');
-                        item.style.padding = '10px';
-                        item.style.borderBottom = '1px solid #ddd';
 
                 let notificationContent = `<b>Conversation ${notification.conversationName}:</b><br>`;
                 notification.unreadMessages.forEach(msg => {
@@ -1174,16 +1044,6 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                     <button onclick="handleInvitation(${invitation.groupId}, 'accept')">Accept</button>
                     <button onclick="handleInvitation(${invitation.groupId}, 'decline')">Decline</button>
                 `;
-                        let notificationContent = `<b>Conversation ${notification.conversationName}:</b><br>`;
-                        notification.unreadMessages.forEach(msg => {
-                            notificationContent += `<b>${msg.username}:</b> ${msg.content} <br>`;
-                        });
-
-                        item.innerHTML = notificationContent;
-
-                        // Adaugă un eveniment de click pentru a deschide conversația
-                        item.style.cursor = 'pointer';
-                        item.onclick = () => openConversation(notification.conversationId);
 
                 notificationList.appendChild(item);
             });
@@ -1225,13 +1085,6 @@ async function handleInvitation(groupId, action) {
 }
 
 
-
-                    document.getElementById('notificationButton').classList.add('has-notifications');
-                }
-            } catch (error) {
-                console.error('Error loading notifications:', error);
-            }
-        }
 
 
         document.addEventListener('DOMContentLoaded', () => {
