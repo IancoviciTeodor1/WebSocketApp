@@ -23,10 +23,19 @@ try {
     $stmt = $db->prepare("INSERT INTO participants (conversationId, userId) VALUES (?, ?)");
     $stmt->execute([$groupId, $creatorId]);
 
-    // Adaugă participanții selectați și trimite invitații
-    $stmt = $db->prepare("INSERT INTO group_invitations (groupId, senderId, receiverId) VALUES (?, ?, ?)");
+    // Trimite invitațiile
+    $stmtInvite = $db->prepare("INSERT INTO group_invitations (groupId, senderId, receiverId) VALUES (?, ?, ?)");
+    $stmtNotify = $db->prepare("INSERT INTO notifications (userId, type, referenceId) VALUES (?, 'invitation', ?)");
+
     foreach ($selectedUsers as $userId) {
-        $stmt->execute([$groupId, $creatorId, $userId]);
+        // Adăugăm invitația
+        $stmtInvite->execute([$groupId, $creatorId, $userId]);
+
+        // Obține ID-ul invitației
+        $invitationId = $db->lastInsertId();
+
+        // Trimitem notificarea pentru fiecare utilizator invitat
+        $stmtNotify->execute([$userId, $invitationId]);
     }
 
     echo json_encode(['success' => true]);
