@@ -28,6 +28,7 @@ CREATE TABLE participants (
     id INT AUTO_INCREMENT PRIMARY KEY,
     conversationId INT,
     userId INT,
+    role ENUM('member', 'admin', 'creator') DEFAULT 'member',
     FOREIGN KEY (conversationId) REFERENCES conversations(id),
     FOREIGN KEY (userId) REFERENCES users(id)
 );
@@ -103,3 +104,6 @@ CREATE TABLE media_files (
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (messageId) REFERENCES messages(id) ON DELETE CASCADE
 );
+
+ALTER TABLE participants
+ADD COLUMN role ENUM('member', 'admin', 'creator') DEFAULT 'member';

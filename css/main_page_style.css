@@ -371,3 +371,29 @@ footer p {
     width: 32px;
     height: 32px;
 }
+
+#memberActionsMenu button {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 8px;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+}
+#memberActionsMenu button:hover {
+    background-color: #00ff0d;
+}
+
+.actions-menu button {
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.actions-menu button:hover {
+    background-color: #f0f0f0;
+}

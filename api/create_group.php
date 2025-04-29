@@ -20,7 +20,7 @@ try {
     // Adaugă creatorul grupului ca participant
     session_start();
     $creatorId = $_SESSION['user_id'];
-    $stmt = $db->prepare("INSERT INTO participants (conversationId, userId) VALUES (?, ?)");
+    $stmt = $db->prepare("INSERT INTO participants (conversationId, userId, role) VALUES (?, ?, 'creator')");
     $stmt->execute([$groupId, $creatorId]);
 
     // Trimite invitațiile
