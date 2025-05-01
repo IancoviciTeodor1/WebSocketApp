@@ -16,6 +16,11 @@ const messages = [];
 const secret = crypto.randomBytes(64).toString('hex');
 const SECRET_KEY = 'secretkey'; // Definește cheia ta secretă constantă pentru JWT
 
+
+const fs = require('fs');
+const path = require('path');
+
+
 // Middleware pentru autentificare cu token JWT
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -152,27 +157,50 @@ initializeDatabase().then(connection => {
         const { conversationId } = req.query;
         try {
             const [rows] = await db.execute(
-                `SELECT m.*, u.username, u.profile_picture FROM messages m
+                `SELECT m.id AS messageId, m.content, m.timestamp, m.senderId,
+                        u.username, u.profile_picture,
+                        mf.id AS fileId, mf.filePath, mf.fileType, mf.fileExtension
+                 FROM messages m
                  JOIN users u ON m.senderId = u.id
+                 LEFT JOIN media_files mf ON m.id = mf.messageId
                  WHERE m.conversationId = ?
                  ORDER BY m.timestamp`,
                 [conversationId]
             );
-
-            const formattedMessages = rows.map(msg => ({
-                id: msg.id,
-                username: msg.username,
-                content: msg.content,
-                timestamp: msg.timestamp,
-                profile_picture: msg.profile_picture || 'default.jpg'
-            }));
-            res.json(formattedMessages);
+    
+            const messagesMap = new Map();
+    
+            for (const row of rows) {
+                if (!messagesMap.has(row.messageId)) {
+                    messagesMap.set(row.messageId, {
+                        id: row.messageId,
+                        senderId: row.senderId,
+                        username: row.username,
+                        content: row.content,
+                        timestamp: row.timestamp,
+                        profile_picture: row.profile_picture || 'default.jpg',
+                        files: []
+                    });
+                }
+    
+                if (row.filePath) {
+                    messagesMap.get(row.messageId).files.push({
+                        id: row.fileId,
+                        path: row.filePath,
+                        type: row.fileType,
+                        extension: row.fileExtension
+                    });
+                }
+            }
+    
+            const groupedMessages = Array.from(messagesMap.values());
+            res.json(groupedMessages);
         } catch (error) {
             console.error('Error fetching messages:', error);
             res.status(500).json({ error: 'Internal server error' });
         }
     });
-
+    
     app.post('/messages', authenticateToken, async (req, res) => {
         const { conversationId, senderId, content } = req.body;
         try {
@@ -183,6 +211,83 @@ initializeDatabase().then(connection => {
             res.status(500).json({ error: 'Internal server error' });
         }
     });
+
+    app.delete('/messages/:messageId', authenticateToken, async (req, res) => {
+        const { messageId } = req.params;
+    
+        try {
+            // Ștergem fișierele asociate din uploads și din baza de date
+            const [files] = await db.execute('SELECT filePath FROM media_files WHERE messageId = ?', [messageId]);
+    
+            for (const file of files) {
+                const filePath = path.join(__dirname, 'uploads/user_files', file.filePath);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            }
+    
+            await db.execute('DELETE FROM media_files WHERE messageId = ?', [messageId]);
+    
+            // Obținem conversația pentru a putea notifica corect participanții
+            const [conversationRow] = await db.execute(
+                `SELECT conversationId FROM messages WHERE id = ?`,
+                [messageId]
+            );
+    
+            if (conversationRow.length === 0) {
+                return res.status(404).json({ error: 'Message not found' });
+            }
+    
+            const conversationId = conversationRow[0].conversationId;
+    
+            // Ștergem mesajul
+            await db.execute('DELETE FROM messages WHERE id = ?', [messageId]);
+    
+            console.log(`Message ${messageId} deleted from conversation ${conversationId}`);
+    
+            // Trimitere notificare prin websocket
+            clients.forEach((clientConversationId, clientSocket) => {
+                if (
+                    clientConversationId === conversationId &&
+                    clientSocket.readyState === WebSocket.OPEN
+                ) {
+                    clientSocket.send(JSON.stringify({
+                        type: 'delete-message',
+                        messageId,
+                        conversationId
+                    }));
+                }
+            });
+    
+            res.status(200).send('Message and files deleted successfully');
+        } catch (error) {
+            console.error('Error deleting message:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    app.delete('/messages/:id', authenticateToken, async (req, res) => {
+        const messageId = req.params.id;
+        try {
+            // Ștergem fișierele asociate cu mesajul
+            const [files] = await db.execute('SELECT filePath FROM media_files WHERE messageId = ?', [messageId]);
+            for (const file of files) {
+                const filePath = path.join(__dirname, 'uploads/user_files', file.filePath);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            }
+            
+            await db.execute('DELETE FROM media_files WHERE messageId = ?', [messageId]);
+            await db.execute('DELETE FROM messages WHERE id = ?', [messageId]);
+            
+            res.status(200).send('Message and associated files deleted');
+        } catch (error) {
+            console.error('Error deleting message:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+    
     
     
     const clients = new Map();
@@ -205,7 +310,7 @@ initializeDatabase().then(connection => {
                     console.log(`No active conversation to leave for socket`);
                 }
             } else if (data.type === 'message') {
-                const { conversationId, content, senderId, username } = data;
+                const { conversationId, content, senderId, username, files = [] } = data;
     
                 console.log(`Message sent in conversation ${conversationId}: ${content}`);
     
@@ -216,6 +321,23 @@ initializeDatabase().then(connection => {
                         [conversationId, senderId, content]
                     );
                     const messageId = result.insertId;
+
+                    // Salvăm fiecare fișier
+                    for (const file of files) {
+                        const { name, type, base64 } = file;
+                        const extension = path.extname(name).slice(1);
+                        const buffer = Buffer.from(base64, 'base64');
+                        const fileName = `${Date.now()}_${name}`;
+                        const filePath = path.join(__dirname, 'uploads/user_files', fileName);
+
+                        fs.writeFileSync(filePath, buffer);
+
+                        await db.execute(
+                            `INSERT INTO media_files (messageId, filePath, fileType, fileExtension)
+                            VALUES (?, ?, ?, ?)`,
+                            [messageId, fileName, mapMimeToType(type), extension]
+                        );
+                    }
 
                     // Actualizăm ultimul mesaj citit pentru expeditor
                     await db.execute(
@@ -314,6 +436,125 @@ initializeDatabase().then(connection => {
                     console.error('Error processing message:', err);
                 }
             }
+
+            else if (data.type === 'delete-message') {
+                const { messageId, conversationId } = data;
+            
+                try {
+                    // Găsim mesajul anterior care va deveni "ultimul citit"
+                    const [previousMessageRows] = await db.execute(
+                        `SELECT id FROM messages 
+                         WHERE conversationId = ? AND timestamp < (SELECT timestamp FROM messages WHERE id = ?) 
+                         ORDER BY timestamp DESC LIMIT 1`,
+                        [conversationId, messageId]
+                    );
+            
+                    const previousMessageId = previousMessageRows.length > 0 ? previousMessageRows[0].id : null;
+            
+                    // Dacă există un mesaj anterior, actualizăm `lastReadMessageId` pentru fiecare participant
+                    if (previousMessageId !== null) {
+                        const [participants] = await db.execute(
+                            `SELECT userId, lastReadMessageId FROM last_read_messages WHERE conversationId = ?`,
+                            [conversationId]
+                        );
+            
+                        for (const participant of participants) {
+                            if (participant.lastReadMessageId === messageId) {
+                                // Dacă participantul are la `lastReadMessageId` mesajul care trebuie șters, îl actualizăm
+                                await db.execute(
+                                    `UPDATE last_read_messages 
+                                     SET lastReadMessageId = ? 
+                                     WHERE conversationId = ? AND userId = ?`,
+                                    [previousMessageId, conversationId, participant.userId]
+                                );
+                                console.log(`Updated last read message for userId: ${participant.userId} in conversation ${conversationId}`);
+                            }
+                        }
+                    } else {
+                        // Dacă nu există un mesaj anterior, actualizăm `lastReadMessageId` la null doar pentru cei care aveau acest mesaj
+                        const [participants] = await db.execute(
+                            `SELECT userId, lastReadMessageId FROM last_read_messages WHERE conversationId = ?`,
+                            [conversationId]
+                        );
+                    
+                        for (const participant of participants) {
+                            if (participant.lastReadMessageId === messageId) {
+                                await db.execute(
+                                    `UPDATE last_read_messages 
+                                     SET lastReadMessageId = NULL 
+                                     WHERE conversationId = ? AND userId = ?`,
+                                    [conversationId, participant.userId]
+                                );
+                                console.log(`Set lastReadMessageId to NULL for userId: ${participant.userId} in conversation ${conversationId}`);
+                            }
+                        }
+                    }
+                    
+            
+                    // Ștergem fișierele asociate cu mesajul
+                    const [files] = await db.execute('SELECT filePath FROM media_files WHERE messageId = ?', [messageId]);
+                    for (const file of files) {
+                        const filePath = path.join(__dirname, 'uploads/user_files', file.filePath);
+                        if (fs.existsSync(filePath)) {
+                            fs.unlinkSync(filePath);
+                        }
+                    }
+            
+                    await db.execute('DELETE FROM media_files WHERE messageId = ?', [messageId]);
+                    await db.execute('DELETE FROM messages WHERE id = ?', [messageId]);
+            
+                    // Trimitem notificarea prin WebSocket la toți participanții
+                    clients.forEach((clientConversationId, clientSocket) => {
+                        if (clientConversationId === conversationId && clientSocket.readyState === WebSocket.OPEN) {
+                            clientSocket.send(JSON.stringify({
+                                type: 'delete-message',
+                                messageId
+                            }));
+                        }
+                    });
+            
+                } catch (error) {
+                    console.error('Error deleting message via WebSocket:', error);
+                }
+            }
+
+            else if (data.type === 'delete-file') {
+                const { fileId, conversationId } = data;
+            
+                try {
+                    // Căutăm fișierul în baza de date
+                    const [fileRows] = await db.execute('SELECT filePath FROM media_files WHERE id = ?', [fileId]);
+                    
+                    if (fileRows.length === 0) {
+                        console.error(`File with id ${fileId} not found.`);
+                        return;
+                    }
+            
+                    const filePath = path.join(__dirname, 'uploads/user_files', fileRows[0].filePath);
+            
+                    // Ștergem efectiv fișierul din server
+                    if (fs.existsSync(filePath)) {
+                        fs.unlinkSync(filePath);
+                        console.log(`File deleted: ${filePath}`);
+                    }
+            
+                    // Ștergem înregistrarea din baza de date
+                    await db.execute('DELETE FROM media_files WHERE id = ?', [fileId]);
+            
+                    // Notificăm toți clienții din conversație
+                    clients.forEach((clientConversationId, clientSocket) => {
+                        if (clientConversationId === conversationId && clientSocket.readyState === WebSocket.OPEN) {
+                            clientSocket.send(JSON.stringify({
+                                type: 'delete-file',
+                                fileId
+                            }));
+                        }
+                    });
+            
+                } catch (error) {
+                    console.error('Error deleting file via WebSocket:', error);
+                }
+            }            
         });
     
         socket.on('close', () => {
@@ -349,3 +590,10 @@ initializeDatabase().then(connection => {
 }).catch(err => {
     console.error('Error connecting to the database:', err);
 });
+
+function mapMimeToType(mime) {
+    if (mime.startsWith('image/')) return 'image';
+    if (mime.startsWith('video/')) return 'video';
+    if (mime.startsWith('audio/')) return 'audio';
+    return 'document';
+}

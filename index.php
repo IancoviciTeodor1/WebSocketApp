@@ -39,321 +39,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebSocket Chat App</title>
-    <style>
-        button {
-            cursor: pointer;
-        }
-        #userList div {
-            border: 1px solid #000;
-            padding: 10px;
-            margin: 5px 0;
-            width: 92%;
-        }
-        #userList div:hover {
-            background-color: #00f;
-            color: #fff;
-            cursor: pointer;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: #f0f0f0;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        header h1 {
-            margin: 0;
-        }
-        #content {
-            display: flex;
-            flex: 1;
-        }
-        #side {
-            display: inline-flex;
-            align-items: center;
-        }
-        .profile-btn {
-            margin-right: 10px;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            background-color: #2ecc71;
-            color: white;
-            white-space: nowrap;
-            text-decoration: none;
-        }
-        .profile-btn:hover {
-            background-color: #27ae60;
-        }
-        .logout-form button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            background-color: #ff4c4c;
-            color: white;
-        }
-        .logout-form button:hover {
-            background-color: #ff3333;
-        }
-        .logout-form {
-            margin: 0;
-        }
-
-        #main {
-            flex: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-        }
-        #sidebar {
-            width: 30%;
-            max-width: 300px;
-            border-right: 1px solid #ccc;
-            padding: 10px;
-            overflow-y: auto;
-        }
-        #recentConversations {
-            max-height: 50%;
-            overflow-y: auto;
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-bottom: 20px;
-        }
-        .conversation-item {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-            cursor: pointer;
-        }
-        .conversation-item:hover {
-            background-color: #f0f0f0;
-        }
-        #userList {
-            max-height: 50%;
-            overflow-y: auto;
-        }
-        #conversation {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        #messages {
-            flex: 1;
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-bottom: 10px;
-            overflow-y: auto;
-        }
-        #messageInput {
-            width: calc(100% - 90px);
-            padding: 10px;
-            border: 1px solid #ccc;
-        }
-        #sendButton {
-            padding: 10px;
-            border: none;
-            background-color: #4CAF50;
-            color: white;
-        }
-        #sendButton:hover {
-            background-color: #45a049;
-        }
-
-        .profile-pic {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            margin-right: 10px;
-            object-fit: cover;
-            border: 1px solid #fff;
-        }
-        .username {
-            font-weight: bold;
-        }
-        .message-item {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            margin-bottom: 10px;
-        }
-        .message-header {
-            display: flex;
-            align-items: center;
-        }
-        .message-body {
-            margin-left: 50px;
-        }
-        .timestamp {
-            font-size: 0.8rem;
-            color: gray;
-            margin-left: 5px;
-        }
-
-        #notificationContainer {
-            position: relative;
-            display: flex;
-            align-items: center;
-            margin-right: 20px;
-        }
-
-        #notificationButton {
-            background: none;
-            border: none;
-            font-size: 24px;
-            position: relative;
-        }
-
-        #notificationButton::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 10px;
-            height: 10px;
-            background: red;
-            border-radius: 50%;
-            display: none; /* Apare doar când există notificări noi */
-        }
-
-        #notificationButton.has-notifications::after {
-            display: block;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        /* Stilul dropdown-ului */
-        #notificationDropdown {
-            position: absolute;
-            top: 50px; /* Ajustează în funcție de poziția butonului */
-            right: 10px; /* Ajustează în funcție de poziția dorită */
-            width: 300px;
-            max-height: 400px;
-            overflow-y: auto;
-            background-color: white;
-            border: 1px solid #ddd;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            border-radius: 8px;
-        }
-
-        /* Stil pentru fiecare notificare */
-        #notificationList > div {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-            cursor: pointer;
-        }
-
-        #notificationList > div:hover {
-            background-color: #f0f0f0;
-        }
-
-        /* Stil pentru textul de notificare */
-        #notificationList > div b {
-            display: block;
-            font-size: 14px;
-            color: #333;
-        }
-
-        #groupForm {
-            margin-top: 10px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            background-color: #f9f9f9;
-        }
-
-        .popup {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-        }
-
-        .popup h3 {
-            margin-top: 0;
-        }
-
-        .popup button {
-            margin-top: 10px;
-            padding: 8px 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .popup button:hover {
-            background-color: #0056b3;
-        }
-
-        .popup input {
-            margin: 10px 0;
-            padding: 8px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .user-invite-item {
-            margin-bottom: 2px;
-        }
-
-        .user-invite-item label {
-            display: flex;
-            align-items: center;
-            gap: 1px; /* Mic spațiu între checkbox și nume */
-        }
-
-        .user-invite-item input[type="checkbox"] {
-            margin: 0; /* Elimină orice margine implicită */
-        }
-
-        /* Stilizarea butonului de creare grup */
-        #createGroupButton {
-            background-color: #4CAF50;
-            color: white;
-            padding: 7px 14px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: background-color 0.3s ease;
-        }
-
-        #createGroupButton:hover {
-            background-color: #45a049;
-        }
-
-        /* Stilizarea butonului de setări grup */
-        #groupSettingsButton {
-            background-color: #2196F3; /* Albastru pentru butonul de setări */
-            color: white;
-            padding: 7px 14px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: background-color 0.3s ease;
-        }
-
-        #groupSettingsButton:hover {
-            background-color: #1976D2;
-        }
-
-
-    </style>
+    <link href="/WebSocketApp/css/main_page_style.css?v=<?php echo time(); ?>" rel="stylesheet" type="text/css"/>
 </head>
 <body>
     <header>
@@ -411,10 +97,24 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 <div>
                     <input type="text" id="messageInput" placeholder="Type a message">
                     <button id="sendButton" onclick="sendMessage()">Send</button>
+                    <input type="file" id="fileInput" multiple style="display: none;">
+                    <input type="button" value="Browse..." onclick="document.getElementById('fileInput').click();" />
+                    <div id="filePreview" style="margin-top: 10px;"></div>
                 </div>
             </div>
         </div>
     </div>
+    
+    <footer>
+        <div class="footer-content">
+            <a href="contact.php">Contact Us</a>
+            |
+            <a href="faq.php">FAQ</a>
+        </div>
+        <div class="footer-content">
+            &copy; 2025 Wavey
+        </div>
+    </footer>
 
     <script>
         let token = localStorage.getItem('token');
@@ -432,6 +132,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         
         const currentUsername = <?php echo json_encode($currentUsername); ?>;
         const BASE_URL = `${window.location.origin}/WebSocketApp`;
+        let currentUserRole = null;
 
         let socket = null;
         let activeConversations = new Set(); // Set pentru a ține evidența conversațiilor active
@@ -446,19 +147,32 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 };
                 
                 socket.onmessage = event => {
-                    const message = JSON.parse(event.data);
-                    
-                    // Verificăm dacă mesajul este destinat conversației curente
-                    if (message.conversationId === currentConversationId) {
-                        displayMessage(message); // Afișăm mesajul doar dacă face parte din conversația curentă
-                        console.log('Message is displayed');
-                        console.log('Received WebSocket message:', message);
+                const msg = JSON.parse(event.data);
 
-                    } else {
-                        console.log('Message is not for the current conversation');
+                if (msg.type === 'message' && msg.conversationId === currentConversationId) {
+                    // Refacem fetch-ul complet, dar afișăm doar ultimul mesaj
+                    fetch(`http://localhost:3000/messages?conversationId=${msg.conversationId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                    .then(response => response.json())
+                    .then(messages => {
+                        const lastMessage = messages[messages.length - 1];
+                        if (lastMessage) {
+                            displayMessage(lastMessage);
+                        }
+                    });
+                } else if (msg.type === 'delete-message') {
+                    removeMessage(msg.messageId);
+                }
+                else if (msg.type === 'delete-file') {
+                    const deletedFileElement = document.getElementById('file-' + msg.fileId);
+                    if (deletedFileElement) {
+                        deletedFileElement.remove();
                     }
-                };
-                
+                }
+            };
+
+
                 socket.onclose = () => {
                     console.log('Disconnected from WebSocket server');
                     activeConversations.clear(); // Golim conversațiile active la deconectare
@@ -471,6 +185,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 joinConversation(conversationId);
             }
         }
+
 
         function joinConversation(conversationId) {
             if (!activeConversations.has(conversationId)) {
@@ -630,6 +345,15 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
             document.getElementById('searchButton').addEventListener('click', searchUsers);
         });
 
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('messageInput').addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            });
+        });
+
 
         function markMessagesAsRead(conversationId, lastReadMessageId) {
             const userId = localStorage.getItem('userId');
@@ -701,7 +425,25 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
             //currentConversationId = conversationId;  Setăm ID-ul conversației curente
             document.getElementById('conversation').style.display = 'block';
             if (type === 'group') {
-                showGroupSettingsButton(conversationId);
+                // Obține rolul curent al utilizatorului în grup
+                fetch(`${BASE_URL}/api/getUserRole.php?conversationId=${conversationId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    currentUserRole = data.role; // poate fi 'member', 'admin', 'creator'
+                    console.log('User role in this group:', currentUserRole);
+
+                    showGroupSettingsButton(conversationId);
+                })
+                .catch(error => {
+                    console.error('Error getting user role:', error);
+                    currentUserRole = null;
+                    alert('Could not determine your role in this group.');
+                });
+            } else {
+                hideGroupSettingsButton();
+                closePopup();
             }
 
             // Încarcă mesajele pentru conversația selectată
@@ -739,10 +481,39 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
         function displayMessage(message) {
             const messagesDiv = document.getElementById('messages');
-            
+
             const messageItem = document.createElement('div');
             messageItem.classList.add('message-item');
-            
+            messageItem.id = 'message-' + message.id;
+
+            // Vom construi toate fișierele într-un container separat
+            let fileContent = '';
+            if (Array.isArray(message.files) && message.files.length > 0) {
+                fileContent += `<div class="file-container" id="files-container-${message.id}">`;
+
+                message.files.forEach(file => {
+                    if (file.type === 'image') {
+                        fileContent += `<img id="file-${file.id}" data-file-id="${file.id}" src="uploads/user_files/${file.path}" alt="Attached Image" class="message-file">`;
+                    } else if (file.type === 'audio') {
+                        fileContent += `<audio controls id="file-${file.id}" data-file-id="${file.id}">
+                                            <source src="uploads/user_files/${file.path}" type="audio/mpeg">
+                                        </audio>`;
+                    } else if (file.type === 'video') {
+                        fileContent += `<video controls id="file-${file.id}" data-file-id="${file.id}">
+                                            <source src="uploads/user_files/${file.path}" type="video/mp4">
+                                        </video>`;
+                    } else if (file.type === 'document') {
+                        fileContent += `<div class="file-preview" id="file-${file.id}" data-file-id="${file.id}">
+                                            <img src="icons/pdf-icon.png" class="file-icon">
+                                            <a href="uploads/user_files/${file.path}" target="_blank">View File</a>
+                                        </div>`;
+                    }
+                });
+
+                fileContent += `</div>`;
+            }
+
+            // Acum putem construi mesajul
             messageItem.innerHTML = `
                 <div class="message-header">
                     <img src="${message.profile_picture}" alt="Profile Picture" class="profile-pic">
@@ -752,15 +523,53 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                     </div>
                 </div>
                 <div class="message-body">
-                    ${message.content || ''}
+                    <div class="message-text">${message.content || ''}</div>
+                    ${fileContent}
                 </div>
             `;
-            
-            // Adăugăm mesajul la sfârșitul conversației
+
             messagesDiv.appendChild(messageItem);
 
-            // Scroll automat pentru a vizualiza cel mai recent mesaj
+            // - click dreapta pe mesaj
+            const textElement = messageItem.querySelector('.message-text');
+            if (textElement && parseInt(message.senderId) === parseInt(userId)) {
+                textElement.addEventListener('contextmenu', (e) => {
+                    showMessageActionsMenu(e, 'message', message.id);
+                });
+            }
+
+            // - click dreapta pe fisiere
+            const fileElements = messageItem.querySelectorAll('[data-file-id]');
+            fileElements.forEach(fileEl => {
+                const fileId = fileEl.getAttribute('data-file-id');
+                fileEl.addEventListener('contextmenu', (e) => {
+                    showMessageActionsMenu(e, 'file', fileId);
+                });
+            });
+
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+
+        function removeMessage(messageId) {
+            // Ștergerea mesajului
+            const messageElement = document.getElementById('message-' + messageId);
+            if (messageElement) {
+                messageElement.remove();
+            }
+
+            // Ștergerea fișierelor atașate
+            const fileContainer = document.getElementById('files-container-' + messageId);
+            if (fileContainer) {
+                fileContainer.remove();
+            }
+        }
+
+
+        function base64ToBlob(base64, type) {
+            const binary = atob(base64);
+            const array = Uint8Array.from(binary, char => char.charCodeAt(0));
+            return new Blob([array], { type });
         }
 
 
@@ -809,46 +618,55 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
 
 
-        function sendMessage() {
+        async function sendMessage() {
             const userId = localStorage.getItem('userId');
             const messageInput = document.getElementById('messageInput');
             const messageContent = messageInput.value.trim();
 
-            if (!messageContent) {
-                alert('Message content cannot be empty.');
+            if (!messageContent && selectedFiles.length === 0) {
+                alert('Please write a message or attach a file.');
                 return;
             }
 
-            const payload = {
-                content: messageContent,
-                conversationId: currentConversationId || null,
-                receiverId: currentConversationId ? null : currentReceiverId,
+            const filePayloads = [];
+
+            // Convertim fișierele în base64
+            for (let file of selectedFiles) {
+                const base64 = await fileToBase64(file);
+                filePayloads.push({
+                    name: file.name,
+                    type: file.type,
+                    base64
+                });
+            }
+
+            const wsPayload = {
+                type: 'message',
+                content: messageContent || null,
+                conversationId: currentConversationId,
                 senderId: userId,
+                username: localStorage.getItem('username'),
+                files: filePayloads
             };
 
-            console.log('Payload sent to server:', payload);
-
-            // Trimitem mesajul doar prin WebSocket
+            // Trimitem mesajul prin WebSocket
             if (socket && socket.readyState === WebSocket.OPEN) {
-                const wsPayload = {
-                    type: 'message',
-                    content: messageContent,
-                    conversationId: currentConversationId,
-                    senderId: userId,
-                    username: localStorage.getItem('username'),
-                };
-
                 console.log('Sending WebSocket message:', wsPayload);
                 socket.send(JSON.stringify(wsPayload));
+
+                // Curățăm câmpurile
+                messageInput.value = '';
+                selectedFiles = [];
+                updateFilePreview();
             } else {
-                // Dacă WebSocket nu este disponibil, salvăm mesajul prin fetch
                 console.warn('WebSocket is not connected. Falling back to REST API.');
+                
                 fetch(`${BASE_URL}/api/send_message.php`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify(wsPayload),
                 })
                 .then(response => {
                     if (!response.ok) {
@@ -861,8 +679,10 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 })
                 .then(data => {
                     console.log('Message sent successfully:', data);
-                    messageInput.value = ''; // Golește câmpul de text
-                    loadMessages(data.conversationId); // Reîncarcă mesajele
+                    messageInput.value = '';
+                    selectedFiles = [];
+                    updateFilePreview();
+                    loadMessages(data.conversationId); // Doar fallback
                 })
                 .catch(error => {
                     console.error('Error sending message:', error);
@@ -870,6 +690,200 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                 });
             }
         }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function showMessageActionsMenu(event, type, id) {
+            event.preventDefault();
+
+            // Elimină orice alt meniu deschis
+            const existingMenu = document.getElementById('messageActionsMenu');
+            if (existingMenu) {
+                existingMenu.remove();
+            }
+
+            // Creează meniul
+            const menu = document.createElement('div');
+            menu.id = 'messageActionsMenu';
+            menu.classList.add('actions-menu');
+            menu.style.position = 'absolute';
+            menu.style.background = '#fff';
+            menu.style.border = '1px solid #ccc';
+            menu.style.padding = '8px';
+            menu.style.borderRadius = '8px';
+            menu.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+            menu.style.zIndex = 1000;
+
+            // Buton pentru ștergere mesaj
+            if (type === 'message') {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete Message';
+                deleteBtn.style.display = 'block';
+                deleteBtn.onclick = () => {
+                    deleteMessage(id);
+                    menu.remove();
+                };
+                menu.appendChild(deleteBtn);
+            }
+
+            // Buton pentru ștergere fișier
+            if (type === 'file') {
+                const deleteFileBtn = document.createElement('button');
+                deleteFileBtn.textContent = 'Delete File';
+                deleteFileBtn.style.display = 'block';
+                deleteFileBtn.onclick = () => {
+                    deleteFile(id);
+                    menu.remove();
+                };
+                menu.appendChild(deleteFileBtn);
+            }
+
+            // Adaugă meniul în body
+            document.body.appendChild(menu);
+
+            // ⚡️ Pozitionăm meniul sub mesajul pe care ai dat click
+            const messageElement = event.currentTarget; // Elementul pe care s-a dat click dreapta
+            const rect = messageElement.getBoundingClientRect();
+            
+            menu.style.top = `${rect.bottom + window.scrollY}px`;
+            menu.style.left = `${rect.left + window.scrollX}px`;
+
+            // Închidem meniul când se dă click în altă parte
+            document.addEventListener('click', function closeMenu(e) {
+                if (!menu.contains(e.target)) {
+                    menu.remove();
+                    document.removeEventListener('click', closeMenu);
+                }
+            });
+        }
+
+
+        function deleteMessage(messageId) {
+            const userId = localStorage.getItem('userId');
+            const payload = {
+                type: 'delete-message',
+                messageId,
+                userId,
+                conversationId: currentConversationId
+            };
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+
+                // Trimitem payload-ul pentru ștergerea mesajului
+                socket.send(JSON.stringify(payload));
+
+                // Ștergem mesajul din DOM imediat ce am trimis cererea
+                const deletedMessageElement = document.getElementById('message-' + messageId);
+                if (deletedMessageElement) {
+                    deletedMessageElement.remove();
+                }
+            } else {
+                console.error('WebSocket not connected.');
+            }
+        }
+
+
+
+        function deleteFile(fileId) {
+            const userId = localStorage.getItem('userId');
+            const fileEl = document.getElementById(`file-${fileId}`);
+            if (!fileEl) return;
+
+            // Găsim containerul de fișiere și mesajul părinte
+            const filesContainer = fileEl.closest('.file-container');
+            const messageItem = fileEl.closest('.message-item');
+
+            // Ștergem fișierul din DOM
+            fileEl.remove();
+
+            // Verificăm dacă mai sunt alte fișiere
+            const remainingFiles = filesContainer.querySelectorAll('[data-file-id]');
+            const hasFiles = remainingFiles.length > 0;
+
+            // Verificăm dacă mesajul are text
+            const messageText = messageItem.querySelector('.message-text');
+            const hasText = messageText && messageText.textContent.trim().length > 0;
+
+            const messageId = parseInt(messageItem.id.replace('message-', ''));
+
+            // Dacă nu mai are nici fișiere, nici text — ștergem întreg mesajul
+            if (!hasFiles && !hasText) {
+                const deletePayload = {
+                    type: 'delete-message',
+                    messageId,
+                    userId,
+                    conversationId: currentConversationId
+                };
+
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify(deletePayload));
+                } else {
+                    console.error('WebSocket not connected.');
+                }
+            } else {
+                // Altfel, trimitem doar comanda pentru a șterge fișierul
+                const deleteFilePayload = {
+                    type: 'delete-file',
+                    fileId,
+                    userId,
+                    conversationId: currentConversationId
+                };
+
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify(deleteFilePayload));
+                } else {
+                    console.error('WebSocket not connected.');
+                }
+            }
+        }
+
+
+
+        let selectedFiles = [];
+
+        document.getElementById('fileInput').addEventListener('change', event => {
+            const newFiles = Array.from(event.target.files);
+
+            // Adăugăm doar fișiere care nu sunt deja în listă (după nume + dimensiune)
+            newFiles.forEach(file => {
+                if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    selectedFiles.push(file);
+                }
+            });
+
+            // Resetăm inputul pentru a permite reselectarea aceluiași fișier
+            event.target.value = '';
+
+            updateFilePreview();
+        });
+
+        function updateFilePreview() {
+            const previewContainer = document.getElementById('filePreview');
+            previewContainer.innerHTML = ''; // Golește preview-ul anterior
+
+            selectedFiles.forEach((file, index) => {
+                const fileElement = document.createElement('div');
+                fileElement.className = 'file-preview';
+                fileElement.innerHTML = `
+                    <span>${file.name}</span>
+                    <button onclick="removeFile(${index})" style="margin-left: 10px;">✖</button>
+                `;
+                previewContainer.appendChild(fileElement);
+            });
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1); // Eliminăm fișierul
+            updateFilePreview();
+        }
+
 
 
         // Functia pentru trimiterea notificărilor
@@ -972,88 +986,87 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
             throw new Error('Failed to fetch notifications');
         }
 
-        const { messages, invitations } = await response.json();
-        const notificationList = document.getElementById('notificationList');
-        notificationList.innerHTML = '';
+                const { messages, invitations } = await response.json();
+                const notificationList = document.getElementById('notificationList');
+                notificationList.innerHTML = '';
 
-        // Afișare notificări mesaje
-        if (messages.length > 0) {
-            messages.forEach(notification => {
-                const item = document.createElement('div');
-                item.style.padding = '10px';
-                item.style.borderBottom = '1px solid #ddd';
+                // Afișare notificări mesaje
+                if (messages.length > 0) {
+                    messages.forEach(notification => {
+                        const item = document.createElement('div');
+                        item.style.padding = '10px';
+                        item.style.borderBottom = '1px solid #ddd';
 
-                let notificationContent = `<b>Conversation ${notification.conversationName}:</b><br>`;
-                notification.unreadMessages.forEach(msg => {
-                    notificationContent += `<b>${msg.username}:</b> ${msg.content} <br>`;
+                        let notificationContent = `<b style="font-size: 18px">${notification.conversationName}</b><br>`;
+                        notification.unreadMessages.forEach(msg => {
+                            notificationContent += `<b>${msg.username}:</b> ${msg.content} <br>`;
+                        });
+
+                        item.innerHTML = notificationContent;
+                        item.style.cursor = 'pointer';
+                        item.onclick = () => {
+                            openConversation(notification.conversationId);
+                            notificationDropdown.classList.add('hidden');
+                        };
+
+                        notificationList.appendChild(item);
+                    });
+                }
+
+                // Afișare notificări invitații
+                if (invitations.length > 0) {
+                    invitations.forEach(invitation => {
+                        const item = document.createElement('div');
+                        item.style.padding = '10px';
+                        item.style.borderBottom = '1px solid #ddd';
+
+                        item.innerHTML = `
+                            <b>Group Invitation:</b><br>
+                            <b>Group:</b> ${invitation.groupName}<br>
+                            <b>From:</b> ${invitation.senderName}<br>
+                            <button style="background-color: green; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;" onclick="handleInvitation(${invitation.groupId}, 'accept')">Accept</button>
+                            <button style="background-color: red; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;" onclick="handleInvitation(${invitation.groupId}, 'decline')">Decline</button>
+                        `;
+
+                        notificationList.appendChild(item);
+                    });
+                }
+
+                if (messages.length === 0 && invitations.length === 0) {
+                    notificationList.innerHTML = '<p align="center">No new notifications</p>';
+                    document.getElementById('notificationButton').classList.remove('has-notifications');
+                } else {
+                    document.getElementById('notificationButton').classList.add('has-notifications');
+                }
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+            }
+        }
+
+        async function handleInvitation(groupId, action) {
+            const endpoint = action === 'accept' ? 'accept_invitation.php' : 'decline_invitation.php';
+            try {
+                const response = await fetch(`${BASE_URL}/api/${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ groupId })
                 });
 
-                item.innerHTML = notificationContent;
-                item.style.cursor = 'pointer';
-                item.onclick = () => {
-                    openConversation(notification.conversationId);
-                    notificationDropdown.classList.add('hidden');
-                };
-
-                notificationList.appendChild(item);
-            });
+                if (response.ok) {
+                    alert(`Invitation ${action}ed successfully!`);
+                    loadNotifications();  // Refresh notifications after action
+                    location.reload();
+                } else {
+                    const errorData = await response.json();
+                    alert(`Error: ${errorData.error}`);
+                }
+            } catch (error) {
+                console.error('Error handling invitation:', error);
+            }
         }
-
-        // Afișare notificări invitații
-        if (invitations.length > 0) {
-            invitations.forEach(invitation => {
-                const item = document.createElement('div');
-                item.style.padding = '10px';
-                item.style.borderBottom = '1px solid #ddd';
-
-                item.innerHTML = `
-                    <b>Group Invitation:</b><br>
-                    <b>Group:</b> ${invitation.groupName}<br>
-                    <b>From:</b> ${invitation.senderName}<br>
-                    <button onclick="handleInvitation(${invitation.groupId}, 'accept')">Accept</button>
-                    <button onclick="handleInvitation(${invitation.groupId}, 'decline')">Decline</button>
-                `;
-
-                notificationList.appendChild(item);
-            });
-        }
-
-        if (messages.length === 0 && invitations.length === 0) {
-            notificationList.innerHTML = '<p align="center">No new notifications</p>';
-            document.getElementById('notificationButton').classList.remove('has-notifications');
-        } else {
-            document.getElementById('notificationButton').classList.add('has-notifications');
-        }
-    } catch (error) {
-        console.error('Error loading notifications:', error);
-    }
-}
-
-async function handleInvitation(groupId, action) {
-    const endpoint = action === 'accept' ? 'accept_invitation.php' : 'decline_invitation.php';
-    try {
-        const response = await fetch(`${BASE_URL}/api/${endpoint}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ groupId })
-        });
-
-        if (response.ok) {
-            alert(`Invitation ${action}ed successfully!`);
-            loadNotifications();  // Refresh notifications after action
-        } else {
-            const errorData = await response.json();
-            alert(`Error: ${errorData.error}`);
-        }
-    } catch (error) {
-        console.error('Error handling invitation:', error);
-    }
-}
-
-
 
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1109,8 +1122,9 @@ async function handleInvitation(groupId, action) {
                         if (data.success) {
                             alert('Group created successfully.');
                             // Trimite invitațiile către toți utilizatorii selectați
-                            sendInvitations(data.groupId, selectedUsers);
+                            // sendInvitations(data.groupId, selectedUsers);
                             groupForm.classList.add('hidden');
+                            // location.reload();
                         } else {
                             alert('Error creating group: ' + data.error);
                         }
@@ -1206,99 +1220,308 @@ async function handleInvitation(groupId, action) {
 
         // Funcție pentru a arăta butonul de setări pentru grup
         function showGroupSettingsButton(conversationId) {
-    // Verificăm dacă butonul există deja
-    const existingButton = document.getElementById('groupSettingsButton');
-    if (existingButton) {
-        return; // Dacă butonul există deja, nu îl mai adăugăm
-    }
+            // Verificăm dacă butonul există deja
+            const existingButton = document.getElementById('groupSettingsButton');
+            if (existingButton) {
+                return; // Dacă butonul există deja, nu îl mai adăugăm
+            }
 
-    const settingsButton = document.createElement('button');
-    settingsButton.id = 'groupSettingsButton';  // Atribuim un ID pentru a-l identifica ușor
-    settingsButton.textContent = 'Group Settings';
-    settingsButton.onclick = function() {
-        openGroupSettingsPopup(conversationId);
-    };
+            const settingsButton = document.createElement('button');
+            settingsButton.id = 'groupSettingsButton';  // Atribuim un ID pentru a-l identifica ușor
+            settingsButton.textContent = 'Group Settings';
+            settingsButton.onclick = function() {
+                openGroupSettingsPopup(conversationId);
+            };
 
-    // Plasează butonul lângă cel de creare a grupului
-    document.getElementById('createGroupContainer').appendChild(settingsButton);
-}
+            // Plasează butonul lângă cel de creare a grupului
+            document.getElementById('createGroupContainer').appendChild(settingsButton);
+        }
 
-
-// Funcție pentru a deschide fereastra pop-up de setări ale grupului
-function openGroupSettingsPopup(conversationId) {
-    const existingPopup = document.querySelector('.popup');
-    if (existingPopup) {
-        existingPopup.remove();
-    }
-
-    // Deschide fereastra pop-up
-    const popup = document.createElement('div');
-    popup.classList.add('popup');
-    popup.innerHTML = `
-    <div id="groupSettingsContainer">
-        <h3>Group Settings</h3>
-        <label for="newGroupName">Group Name:</label>
-        <input type="text" id="newGroupName" placeholder="New group name">
-        <button onclick="updateGroupName(${conversationId})">Update Group Name</button>
-
-        <h4>Members:</h4>
-        <ul id="groupMembersList"></ul>
-
-        <div id="inviteUserSearch">
-            <h4>Invite Users:</h4>
-            <input type="text" id="inviteUserSearchInput" placeholder="Search users">
-            <div id="inviteUserList2"></div>
-        </div>
-
-        <button onclick="inviteUsersToGroup(${conversationId})">Invite Users</button>
-
-        <button onclick="closePopup()">Close</button>
-    </div>
-    `;
-
-    document.body.appendChild(popup);
-
-    // Eveniment pentru căutarea utilizatorilor
-    document.getElementById('inviteUserSearchInput').addEventListener('input', searchUsersForInvite);
-
-    // Încarcă detaliile grupului și utilizatorii de invitat
-    loadGroupDetails(currentConversationId);
-    loadUserListForInvite(currentConversationId);
-}
+        function hideGroupSettingsButton() {
+            const settingsButton = document.getElementById('groupSettingsButton');
+            if (settingsButton) {
+                settingsButton.remove(); // Elimină butonul din DOM
+            }
+        }
 
 
-// Funcție pentru a închide pop-up-ul
-function closePopup() {
-    const popup = document.querySelector('.popup');
-    if (popup) {
-        popup.remove();
-    }
-}
+        // Funcție pentru a deschide fereastra pop-up de setări ale grupului
+        function openGroupSettingsPopup(conversationId) {
+            const existingPopup = document.querySelector('.popup');
+            if (existingPopup) {
+                existingPopup.remove();
+            }
 
-// Funcție pentru a încărca detalii despre grup
-function loadGroupDetails(conversationId) {
-    fetch(`${BASE_URL}/api/groupDetails.php?groupId=${conversationId}`)
-        .then(response => response.json())
-        .then(data => {
-            // Setează numele grupului
-            document.getElementById('newGroupName').value = data.groupName;
+            // Deschide fereastra pop-up
+            const popup = document.createElement('div');
+            popup.classList.add('popup');
+            popup.innerHTML = `
+            <div id="groupSettingsContainer">
+                <h3>Group Settings</h3>
+                <label for="newGroupName">Group Name:</label>
+                <input type="text" id="newGroupName" placeholder="New group name">
+                <button id="updateGroupNameButton" onclick="updateGroupName(${conversationId})">Update Group Name</button>
 
-            // Listează membrii grupului
-            const groupMembersList = document.getElementById('groupMembersList');
-            groupMembersList.innerHTML = '';
-            data.members.forEach(member => {
-                const memberItem = document.createElement('li');
-                memberItem.textContent = member.username;
-                groupMembersList.appendChild(memberItem);
+                <h4>Members:</h4>
+                <ul id="groupMembersList" onclick="handleMemberClick(event)"></ul>
+
+                <div id="inviteUserSearch">
+                    <h4>Invite Users:</h4>
+                    <input type="text" id="inviteUserSearchInput" placeholder="Search users">
+                    <div id="inviteUserList2"></div>
+                </div>
+
+                <button onclick="inviteUsersToGroup(${conversationId})">Invite Users</button>
+                <button onclick="leaveGroup(${conversationId})" style="background-color: red; color: white; margin-top: 20px;">Leave Group</button>
+                <button onclick="closePopup()">Close</button>
+            </div>
+            `;
+
+            document.body.appendChild(popup);
+
+            if (currentUserRole === 'member') {
+                document.getElementById('newGroupName').setAttribute('readonly', 'readonly');
+                document.getElementById('updateGroupNameButton').style.display = 'none';
+            }
+
+            // Eveniment pentru căutarea utilizatorilor
+            document.getElementById('inviteUserSearchInput').addEventListener('input', searchUsersForInvite);
+
+            // Încarcă detaliile grupului și utilizatorii de invitat
+            loadGroupDetails(currentConversationId);
+            loadUserListForInvite(currentConversationId);
+        }
+
+        function handleMemberClick(event) {
+            const clickedItem = event.target.closest('li');
+            if (!clickedItem) return;
+
+            const userId = clickedItem.getAttribute('data-user-id');
+            const userRole = clickedItem.getAttribute('data-user-role');
+            console.log(userRole);
+
+            // Evită auto-promovarea sau promovarea creatorului
+            if (userRole === 'creator' || parseInt(userId) === parseInt(localStorage.getItem('userId'))) return;
+
+            // Verifică rolul tău propriu
+            const myRole = localStorage.getItem('myRoleInCurrentGroup');
+            if (myRole !== 'creator' && myRole !== 'admin') return;
+
+            // Confirmare și cerere către server
+            if (confirm('Do you want to promote this member to admin?')) {
+                promoteUserToAdmin(userId);
+            }
+        }
+
+        function promoteUserToAdmin(userId) {
+            fetch(`${BASE_URL}/api/promote_to_admin.php`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    groupId: currentConversationId,
+                    userId: userId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('User promoted to admin successfully!');
+                    loadGroupDetails(currentConversationId); // Reîncarcă membrii
+                } else {
+                    throw new Error(JSON.stringify(data));
+                }
+            })
+            .catch(error => {
+                console.error('Failed to promote user:', error);
+                alert('Failed to promote user.');
             });
-        })
-        .catch(error => {
-            console.error('Error loading group details:', error);
-        });
-}
+        }
 
-// Funcție pentru a actualiza numele grupului
-function updateGroupName(conversationId) {
+        function leaveGroup(groupId) {
+            if (!confirm('Are you sure you want to leave this group?')) {
+                return;
+            }
+
+            fetch(`${BASE_URL}/api/leave_group.php`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    groupId: groupId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('You have left the group.');
+                    closePopup();
+                    loadRecentConversations();
+                    document.getElementById('conversation').style.display = 'none'; // Ascunde conversația
+                    return;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            })
+            .catch(error => {
+                console.error('Error leaving group:', error);
+                alert('Failed to leave group.');
+            });
+        }
+
+        function removeMemberFromGroup(userId) {
+            if (!confirm('Are you sure you want to remove this member from the group?')) {
+                return;
+            }
+
+            fetch(`${BASE_URL}/api/remove_member.php`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    groupId: currentConversationId,
+                    userId: userId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Member removed successfully.');
+                    loadGroupDetails(currentConversationId); // Actualizăm lista de membri
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            })
+            .catch(error => {
+                console.error('Failed to remove member:', error);
+                alert('Failed to remove member.');
+            });
+        }
+
+
+
+        // Funcție pentru a închide pop-up-ul
+        function closePopup() {
+            const popup = document.querySelector('.popup');
+            if (popup) {
+                popup.remove();
+            }
+        }
+
+        // Funcție pentru a încărca detalii despre grup
+        function loadGroupDetails(conversationId) {
+            fetch(`${BASE_URL}/api/groupDetails.php?groupId=${conversationId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('newGroupName').value = data.groupName;
+
+                    const groupMembersList = document.getElementById('groupMembersList');
+                    groupMembersList.innerHTML = '';
+
+                    data.members.forEach(member => {
+                        const memberItem = document.createElement('li');
+                        memberItem.textContent = `${member.username} (${member.role})`;
+
+                        // Acum fiecare membru are userId
+                        memberItem.style.cursor = 'pointer';
+                        memberItem.onclick = (e) => {
+                            showMemberActionsMenu(e, member);
+                        };
+
+                        groupMembersList.appendChild(memberItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading group details:', error);
+                });
+        }
+
+
+        function showMemberActionsMenu(event, member) {
+            // Elimină un meniu vechi dacă există
+            const existingMenu = document.getElementById('memberActionsMenu');
+            if (existingMenu) {
+                existingMenu.remove();
+            }
+
+            // Creăm meniul nou
+            const menu = document.createElement('div');
+            menu.id = 'memberActionsMenu';
+            menu.style.position = 'absolute';
+            menu.style.background = '#fff';
+            menu.style.border = '1px solid #ccc';
+            menu.style.padding = '5px';
+            menu.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+            menu.style.zIndex = 1000;
+
+            // Poziționează meniul sub elementul click-uit
+            const rect = event.target.getBoundingClientRect();
+            menu.style.top = `${rect.bottom + window.scrollY}px`;
+            menu.style.left = `${rect.left + window.scrollX}px`;
+
+            // Adaugă opțiunile din meniu
+            if (member.role === 'member' && ['admin', 'creator'].includes(currentUserRole)) {
+                const promoteBtn = document.createElement('button');
+                promoteBtn.textContent = 'Promote to Admin';
+                promoteBtn.onclick = () => {
+                    promoteUserToAdmin(member.userId);
+                    menu.remove();
+                };
+                menu.appendChild(promoteBtn);
+            }
+
+            if (['admin', 'creator'].includes(currentUserRole)) {
+                const isSelf = member.userId == userId; // Verifică dacă este utilizatorul curent
+                const isProtected = member.role === 'admin' || member.role === 'creator'; // Protejează adminii și creatorul
+
+                if (!isSelf && (!isProtected || currentUserRole === 'creator')) {
+                    const removeBtn = document.createElement('button');
+                    removeBtn.textContent = 'Remove from Group';
+                    removeBtn.style.display = 'block';
+                    removeBtn.style.marginTop = '5px';
+                    removeBtn.onclick = () => {
+                        removeMemberFromGroup(member.userId);
+                        menu.remove();
+                    };
+                    menu.appendChild(removeBtn);
+                }
+            }
+
+            const openChatBtn = document.createElement('button');
+            openChatBtn.textContent = 'Message User';
+            openChatBtn.style.display = 'block';
+            openChatBtn.style.marginTop = '5px';
+            openChatBtn.onclick = () => {
+                openUserConversation(member.userId);
+                menu.remove();
+                closePopup();
+            };
+            menu.appendChild(openChatBtn);
+
+            document.body.appendChild(menu);
+
+            // Închide meniul dacă utilizatorul face click altundeva
+            setTimeout(() => {
+                document.addEventListener('click', function handlerOutsideClick(e) {
+                    if (!menu.contains(e.target)) {
+                        menu.remove();
+                        document.removeEventListener('click', handlerOutsideClick);
+                    }
+                });
+            }, 0);
+        }
+
+
+        // Funcție pentru a actualiza numele grupului
+        function updateGroupName(conversationId) {
+    if (!['creator', 'admin'].includes(currentUserRole)) {
+        alert('You do not have permission to change the group name.');
+        return;
+    }
+
     const newGroupName = document.getElementById('newGroupName').value;
     if (newGroupName) {
         fetch(`${BASE_URL}/api/updateGroupName.php`, {
@@ -1308,11 +1531,18 @@ function updateGroupName(conversationId) {
         })
         .then(response => response.json())
         .then(data => {
-            alert('Group name updated successfully');
-            loadGroupDetails(conversationId);
+            if (data.success) {
+                alert('Group name updated successfully');
+                loadGroupDetails(conversationId);
+            } else {
+                // Dacă serverul răspunde dar există eroare
+                alert('Failed to update group name: ' + (data.error || 'Unknown error'));
+            }
         })
         .catch(error => {
+            // Dacă există o eroare de rețea sau altceva grav
             console.error('Error updating group name:', error);
+            alert('An error occurred while updating the group name.');
         });
     } else {
         alert('Please enter a valid group name.');
@@ -1321,93 +1551,88 @@ function updateGroupName(conversationId) {
 
 
 
-
-// Funcție pentru a încărca utilizatorii disponibili pentru invitație
-function loadUserListForInvite(conversationId) {
-    fetch(`${BASE_URL}/api/get_users_for_invite.php?groupId=${conversationId}&excludeUserId=${userId}`)
-        .then(response => response.json())
-        .then(users => {
-            if (users.error) {
-                console.log(users.error);
-                return;
-            }
-            displayInviteUserList(users); // Afișează lista de utilizatori
-        })
-        .catch(error => {
-            console.error('Error loading user list for invite:', error);
-        });
-}
-
-
-// Funcție pentru a afișa lista de utilizatori în div-ul de invitație
-function displayInviteUserList(users) {
-    const inviteUserList2 = document.getElementById('inviteUserList2');
-    inviteUserList2.innerHTML = ''; // Curăță lista anterioară
-
-    users.forEach(user => {
-        const userDiv = document.createElement('div');
-        userDiv.classList.add('user-invite-item');
-        userDiv.innerHTML = `
-            <label style="display: inline-flex; align-items: center; margin: 0;">
-                <input type="checkbox" value="${user.id}" onclick="toggleUserSelectionForInvite(this)" style="margin-right: 5px;">${user.username}
-            </label>
-        `;
-        inviteUserList2.appendChild(userDiv);
-    });
-}
-
-// Funcție pentru a căuta utilizatorii în lista de invitație
-function searchUsersForInvite() {
-    const searchTerm = document.getElementById('inviteUserSearchInput').value.toLowerCase();
-    const userItems = document.querySelectorAll('#inviteUserList2 .user-invite-item');
-
-    userItems.forEach(item => {
-        const username = item.textContent.toLowerCase();
-        if (username.includes(searchTerm)) {
-            item.style.display = 'block';
-        } else {
-            item.style.display = 'none';
+        // Funcție pentru a încărca utilizatorii disponibili pentru invitație
+        function loadUserListForInvite(conversationId) {
+            fetch(`${BASE_URL}/api/get_users_for_invite.php?groupId=${conversationId}&excludeUserId=${userId}`)
+                .then(response => response.json())
+                .then(users => {
+                    if (users.error) {
+                        console.log(users.error);
+                        return;
+                    }
+                    displayInviteUserList(users); // Afișează lista de utilizatori
+                })
+                .catch(error => {
+                    console.error('Error loading user list for invite:', error);
+                });
         }
-    });
-}
-
-// Funcție pentru a gestiona selecția utilizatorilor
-function toggleUserSelectionForInvite(checkbox) {
-    // Puteți salva selecțiile într-o variabilă globală sau le trimiteți direct la invitație
-    console.log(`User ${checkbox.value} selected: ${checkbox.checked}`);
-}
-
-// Funcție pentru a invita utilizatori selectați în grup
-function inviteUsersToGroup(conversationId) {
-    const selectedUserIds = Array.from(document.querySelectorAll('#inviteUserList2 input[type="checkbox"]:checked'))
-                                .map(checkbox => checkbox.value);
-
-    if (selectedUserIds.length > 0) {
-        fetch(`${BASE_URL}/api/inviteUsersToGroup.php`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ groupId: conversationId, userIds: selectedUserIds })
-        })
-        .then(response => response.json())
-        .then(data => {
-            alert('Users invited successfully');
-            loadGroupDetails(conversationId); // Reîncarcă detaliile grupului
-        })
-        .catch(error => {
-            console.error('Error inviting users:', error);
-        });
-    } else {
-        alert('Please select users to invite.');
-    }
-}
 
 
+        // Funcție pentru a afișa lista de utilizatori în div-ul de invitație
+        function displayInviteUserList(users) {
+            const inviteUserList2 = document.getElementById('inviteUserList2');
+            inviteUserList2.innerHTML = ''; // Curăță lista anterioară
 
+            users.forEach(user => {
+                const userDiv = document.createElement('div');
+                userDiv.classList.add('user-invite-item');
+                userDiv.innerHTML = `
+                    <label style="display: inline-flex; align-items: center; margin: 0;">
+                        <input type="checkbox" value="${user.id}" onclick="toggleUserSelectionForInvite(this)" style="margin-right: 5px;">${user.username}
+                    </label>
+                `;
+                inviteUserList2.appendChild(userDiv);
+            });
+        }
 
+        // Funcție pentru a căuta utilizatorii în lista de invitație
+        function searchUsersForInvite() {
+            const searchTerm = document.getElementById('inviteUserSearchInput').value.toLowerCase();
+            const userItems = document.querySelectorAll('#inviteUserList2 .user-invite-item');
+
+            userItems.forEach(item => {
+                const username = item.textContent.toLowerCase();
+                if (username.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Funcție pentru a gestiona selecția utilizatorilor
+        function toggleUserSelectionForInvite(checkbox) {
+            // Puteți salva selecțiile într-o variabilă globală sau le trimiteți direct la invitație
+            console.log(`User ${checkbox.value} selected: ${checkbox.checked}`);
+        }
+
+        // Funcție pentru a invita utilizatori selectați în grup
+        function inviteUsersToGroup(conversationId) {
+            const selectedUserIds = Array.from(document.querySelectorAll('#inviteUserList2 input[type="checkbox"]:checked'))
+                                        .map(checkbox => checkbox.value);
+
+            if (selectedUserIds.length > 0) {
+                fetch(`${BASE_URL}/api/inviteUsersToGroup.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ groupId: conversationId, userIds: selectedUserIds })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Users invited successfully');
+                    loadGroupDetails(conversationId); // Reîncarcă detaliile grupului
+                })
+                .catch(error => {
+                    console.error('Error inviting users:', error);
+                });
+            } else {
+                alert('Please select users to invite.');
+            }
+        }
         
 
         // Încarcă notificările periodic
-        setInterval(loadNotifications, 10000);
+        setInterval(loadNotifications, 1000);
         loadNotifications(); // Încarcă notificările imediat ce se încarcă pagina
 
         console.log(currentUsername);

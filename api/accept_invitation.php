@@ -40,9 +40,10 @@ try {
     );
     $stmt->execute([$userId, $invitationId]);
 
-    // Actualizează statusul invitației la "accepted"
+    // Sterge invitatia
     $stmt = $db->prepare(
-        'UPDATE group_invitations SET status = "accepted" WHERE id = ?'
+        //'UPDATE group_invitations SET status = "accepted" WHERE id = ?'
+        'DELETE FROM group_invitations WHERE id = ?'
     );
     $stmt->execute([$invitationId]);
 

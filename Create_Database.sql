@@ -28,6 +28,7 @@ CREATE TABLE participants (
     id INT AUTO_INCREMENT PRIMARY KEY,
     conversationId INT,
     userId INT,
+    role ENUM('member', 'admin', 'creator') DEFAULT 'member',
     FOREIGN KEY (conversationId) REFERENCES conversations(id),
     FOREIGN KEY (userId) REFERENCES users(id)
 );
@@ -69,70 +70,40 @@ CREATE TABLE last_read_messages (
     userId INT NOT NULL,
     conversationId INT NOT NULL,
     lastReadMessageId INT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (userId) REFERENCES users(id),
     FOREIGN KEY (conversationId) REFERENCES conversations(id),
     FOREIGN KEY (lastReadMessageId) REFERENCES messages(id),
     UNIQUE (userId, conversationId)
+);
+
+CREATE TABLE media_files (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    messageId INT NOT NULL,
+    filePath VARCHAR(255) NOT NULL, -- Locația fișierului
+    fileType ENUM('image', 'video', 'audio', 'document') NOT NULL,
+    fileExtension VARCHAR(10) NOT NULL, -- Ex: png, mp3, pdf
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (messageId) REFERENCES messages(id) ON DELETE CASCADE
 );
 
 
 
 In caz ca ati initializat deja baza de date, actualizati-o:
-ALTER TABLE users 
-ADD COLUMN email VARCHAR(255) NOT NULL UNIQUE;
 
-ALTER TABLE conversations 
-CHANGE COLUMN subject name VARCHAR(255);
-
-ALTER TABLE conversations
-ADD COLUMN type ENUM('one-on-one', 'group') NOT NULL;
+ALTER TABLE last_read_messages
+ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
 
-ALTER TABLE messages
-DROP COLUMN receiverId;
-
-ALTER TABLE messages
-ADD COLUMN conversationId INT,
-ADD FOREIGN KEY (conversationId) REFERENCES conversations(id);
-
-ALTER TABLE conversations 
-MODIFY COLUMN type ENUM('one-on-one', 'group', 'self') NOT NULL;
-
-ALTER TABLE users
-ADD COLUMN profile_picture VARCHAR(255) DEFAULT NULL;
-
-
-CREATE TABLE notifications (
+CREATE TABLE media_files (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    userId INT NOT NULL,                  -- ID-ul utilizatorului care primește notificarea
-    type ENUM('message', 'invitation') NOT NULL, -- Tipul notificării: mesaj sau invitație
-    referenceId INT NOT NULL,             -- ID-ul referinței (ID-ul mesajului sau invitației)
-    isRead BOOLEAN DEFAULT FALSE,         -- Dacă notificarea a fost citită
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (userId) REFERENCES users(id)
+    messageId INT NOT NULL,
+    filePath VARCHAR(255) NOT NULL, -- Locația fișierului
+    fileType ENUM('image', 'video', 'audio', 'document') NOT NULL,
+    fileExtension VARCHAR(10) NOT NULL, -- Ex: png, mp3, pdf
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (messageId) REFERENCES messages(id) ON DELETE CASCADE
 );
 
-CREATE TABLE group_invitations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    groupId INT NOT NULL,                 -- ID-ul grupului pentru care este invitația
-    senderId INT NOT NULL,                -- ID-ul utilizatorului care trimite invitația
-    receiverId INT NOT NULL,              -- ID-ul utilizatorului care primește invitația
-    status ENUM('pending', 'accepted', 'declined') DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (groupId) REFERENCES conversations(id),
-    FOREIGN KEY (senderId) REFERENCES users(id),
-    FOREIGN KEY (receiverId) REFERENCES users(id)
-);
-
-
-
-CREATE TABLE last_read_messages (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    userId INT NOT NULL,
-    conversationId INT NOT NULL,
-    lastReadMessageId INT NOT NULL,
-    FOREIGN KEY (userId) REFERENCES users(id),
-    FOREIGN KEY (conversationId) REFERENCES conversations(id),
-    FOREIGN KEY (lastReadMessageId) REFERENCES messages(id),
-    UNIQUE (userId, conversationId)
-);
+ALTER TABLE participants
+ADD COLUMN role ENUM('member', 'admin', 'creator') DEFAULT 'member';
