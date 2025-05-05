@@ -156,7 +156,7 @@ header h1 a:hover {
     height: 100%;
 }
 #leftside{
-    width: 300px;
+
     background-color: var(--light-blue);
     display: flex;
     flex-direction: column;
@@ -184,6 +184,7 @@ header h1 a:hover {
 }
 
 .conversation-item {
+    display: flex;
     padding: 10px;
     background-color: var(--medium-blue);
     border-radius: 20px;
@@ -488,7 +489,13 @@ footer {
     flex-direction: column;
     justify-content: center;
     margin-bottom: 10px;
+    padding: 10px;
+    background-color: var(--cream);
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s, box-shadow 0.3s;
 }
+
 
 .message-header {
     display: flex;
@@ -568,4 +575,130 @@ footer {
 
 .actions-menu button:hover {
     background-color: #f0f0f0;
+}
+
+/* Popup overlay */
+#popupOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#popupOverlay.hidden {
+    display: none;
+}
+
+/* Popup content */
+#groupFormPopup {
+    background-color: var(--cream);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    width: 400px;
+    max-width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: popup-fade-in 0.3s ease;
+}
+
+@keyframes popup-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--light-blue);
+    background-color: var(--medium-blue);
+    color: white;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.close-popup {
+    cursor: pointer;
+    font-size: 24px;
+    color: white;
+}
+
+.close-popup:hover {
+    color: var(--orange);
+}
+
+.popup-content {
+    padding: 20px;
+}
+
+#groupUserSearch input,
+#groupName {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid var(--light-blue);
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#inviteUserList {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid var(--light-blue);
+    border-radius: 4px;
+    margin-bottom: 15px;
+    padding: 5px;
+}
+
+#inviteUserList div {
+    padding: 8px;
+    border-bottom: 1px solid var(--light-blue);
+}
+
+#inviteUserList div:last-child {
+    border-bottom: none;
+}
+
+#selectedUserList {
+    list-style-type: none;
+    padding: 0;
+}
+
+#selectedUserList li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background-color: var(--light-blue);
+    margin-bottom: 5px;
+    border-radius: 4px;
+}
+
+#submitGroupButton {
+    background-color: var(--orange);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 15px;
+}
+
+#submitGroupButton:hover {
+    background-color: #c15529;
 }
