@@ -13,17 +13,17 @@ function connectWebSocket(conversationId) {
             if (msg.type === 'message' && msg.conversationId === currentConversationId) {
                 // Refacem fetch-ul complet, dar afișăm doar ultimul mesaj
                 fetch(`http://localhost:3000/messages?conversationId=${msg.conversationId}`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(messages => {
-                        const lastMessage = messages[messages.length - 1];
-                        if (lastMessage) {
-                            displayMessage(lastMessage);
-                        }
-                    });
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(response => response.json())
+                .then(messages => {
+                    const lastMessage = messages[messages.length - 1];
+                    if (lastMessage) {
+                        displayMessage(lastMessage);
+                    }
+                });
                 loadRecentConversations();
             } else if (msg.type === 'delete-message') {
                 removeMessage(msg.messageId);
@@ -33,7 +33,10 @@ function connectWebSocket(conversationId) {
                 if (deletedFileElement) {
                     deletedFileElement.remove();
                 }
+            } else if (msg.type === 'party' && msg.conversationId === currentConversationId) {
+                triggerConfetti();
             }
+            
         };
 
 
@@ -49,7 +52,6 @@ function connectWebSocket(conversationId) {
         joinConversation(conversationId);
     }
 }
-
 
 function joinConversation(conversationId) {
     if (!activeConversations.has(conversationId)) {

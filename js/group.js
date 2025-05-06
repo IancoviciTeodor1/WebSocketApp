@@ -327,12 +327,15 @@ function closePopup() {
     }
 }
 
-// Funcție pentru a încărca detalii despre grup
+
 function loadGroupDetails(conversationId) {
     fetch(`${BASE_URL}/api/groupDetails.php?groupId=${conversationId}`)
         .then(response => response.json())
         .then(data => {
             document.getElementById('newGroupName').value = data.groupName;
+
+            // Salvăm membrii pentru comenzi ulterioare
+            currentConversationMembers = data.members;
 
             const groupMembersList = document.getElementById('groupMembersList');
             groupMembersList.innerHTML = '';
@@ -340,13 +343,10 @@ function loadGroupDetails(conversationId) {
             data.members.forEach(member => {
                 const memberItem = document.createElement('li');
                 memberItem.textContent = `${member.username} (${member.role})`;
-
-                // Acum fiecare membru are userId
                 memberItem.style.cursor = 'pointer';
                 memberItem.onclick = (e) => {
                     showMemberActionsMenu(e, member);
                 };
-
                 groupMembersList.appendChild(memberItem);
             });
         })
@@ -354,6 +354,7 @@ function loadGroupDetails(conversationId) {
             console.error('Error loading group details:', error);
         });
 }
+
 
 
 function showMemberActionsMenu(event, member) {

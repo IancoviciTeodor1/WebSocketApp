@@ -155,4 +155,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Încarcă notificările periodic
 setInterval(loadNotifications, 1000);
-loadNotifications(); // Încarcă notificările imediat ce se încarcă pagina

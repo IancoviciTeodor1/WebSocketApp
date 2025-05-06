@@ -51,10 +51,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('messageInput').addEventListener('keydown', function(event) {
+    document.getElementById('searchInput').addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
             event.preventDefault();
-            sendMessage();
+            searchUsers();
         }
     });
 });
@@ -140,6 +140,7 @@ function openUserConversation(receiverId) {
 
 function openConversation(conversationId, type = null, participants = null) {
     //currentConversationId = conversationId;  Setăm ID-ul conversației curente
+    currentConversationType = type;
     document.getElementById('conversation').style.display = 'block';
     if (type === 'group') {
         // Obține rolul curent al utilizatorului în grup
@@ -196,3 +197,78 @@ function openConversation(conversationId, type = null, participants = null) {
         alert('Cannot open this conversation.');
     }
 }
+
+
+let offset = 0; // Offset pentru paginare
+const limit = 20; // Număr de conversații per cerere
+let loading = false; // Indicator pentru a preveni cererile multiple
+let allLoaded = false; // Indicator dacă toate conversațiile au fost încărcate
+
+// Funcție pentru a încărca conversațiile recente
+function loadRecentConversations(offset = 0, limit = 20) {
+    fetch(`${BASE_URL}/api/recent_conversations.php?offset=${offset}&limit=${limit}`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            console.error('HTTP Error:', response.status);
+            return response.text().then(err => {
+                throw new Error(`Server Error: ${err}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Received data:', data);
+        if (Array.isArray(data)) {
+            const recentList = document.getElementById('recentConversations');
+            recentList.innerHTML = '';
+            data.forEach(conversation => {
+                console.log('Conversation data:', conversation);
+
+                const conversationItem = document.createElement('div');
+                conversationItem.classList.add('conversation-item');
+
+                // Afișează numele conversației folosind "conversationName"
+                conversationItem.textContent = conversation.conversationName || 'Unnamed conversation';
+                // Adaugă o pictogramă diferită în funcție de tipul conversației
+                const icon = document.createElement('span');
+                icon.classList.add('material-icons');
+                if (conversation.conversationType === 'group') {
+                    icon.textContent = 'group';
+                } else if (conversation.conversationType === 'one-on-one') {
+                    icon.textContent = 'person';
+                } else {
+                    icon.textContent = 'chat';
+                }
+                conversationItem.prepend(icon);
+                // Configurăm acțiunea la click pentru conversație
+                conversationItem.onclick = () =>
+                    openConversation(conversation.conversationId, conversation.conversationType);
+
+                recentList.appendChild(conversationItem);
+            });
+        } else {
+            console.error('Unexpected data format:', data);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading recent conversations:', error);
+        alert('Failed to load recent conversations.');
+    });
+}
+
+// Ascultă evenimentul de scroll pentru a încărca mai multe conversații
+document.getElementById('recentConversations').addEventListener('scroll', function() {
+    const {
+        scrollTop,
+        scrollHeight,
+        clientHeight
+    } = this;
+    if (scrollTop + clientHeight >= scrollHeight - 10) {
+        loadRecentConversations(); // Încarcă mai multe conversații
+    }
+});

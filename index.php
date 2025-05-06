@@ -19,7 +19,7 @@ use Firebase\JWT\Key;
 
 function authenticateToken($token)
 {
-    $secretKey = 'secretkey'; // Folosește aceeași cheie ca la generare
+    $secretKey = 'secretkey'; // Foloseste aceeasi cheie ca la generare
 
     try {
         $decoded = JWT::decode($token, new Key($secretKey, 'HS256'));
@@ -40,7 +40,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Chat App</title>
+    <title>Wavey</title>
     <link href="/WebSocketApp/css/main_page_style.css?v=<?php echo time(); ?>" rel="stylesheet" type="text/css" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
         rel="stylesheet">
@@ -107,11 +107,12 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         </div>
     </div>
 
-    <script src="/WebSocketApp/js/websocket.js"></script>
-    <script src="/WebSocketApp/js/conversations.js"></script>
-    <script src="/WebSocketApp/js/messages.js"></script>
-    <script src="/WebSocketApp/js/notifications.js"></script>
-    <script src="/WebSocketApp/js/group.js"></script>
+    <script src="/WebSocketApp/js/websocket.js?v=<?php echo time(); ?>"></script>
+    <script src="/WebSocketApp/js/conversations.js?v=<?php echo time(); ?>"></script>
+    <script src="/WebSocketApp/js/messages.js?v=<?php echo time(); ?>"></script>
+    <script src="/WebSocketApp/js/notifications.js?v=<?php echo time(); ?>"></script>
+    <script src="/WebSocketApp/js/group.js?v=<?php echo time(); ?>"></script>
+    <script src="/WebSocketApp/js/lib/confetti.browser.min.js"></script>
 
     <script>
         let token = localStorage.getItem('token');
@@ -123,6 +124,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
             window.location.href = 'login.php';
         }
         let currentConversationId;
+        let currentConversationType = null;
         let currentReceiverId;
         console.log('User ID after login:', localStorage.getItem('userId'));
         console.log('Token after login:', localStorage.getItem('token'));
@@ -136,20 +138,11 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
         console.log(currentUsername);
 
-        // Ascultă evenimentul de scroll pentru a încărca mai multe conversații
-        document.getElementById('recentConversations').addEventListener('scroll', function() {
-            const {
-                scrollTop,
-                scrollHeight,
-                clientHeight
-            } = this;
-            if (scrollTop + clientHeight >= scrollHeight - 10) {
-                loadRecentConversations(); // Încarcă mai multe conversații
-            }
-        });
-
         // Încarcă primele conversații la inițializare
         loadRecentConversations();
+        let currentConversationMembers = [];
+
+        loadNotifications(); // Încarcă notificările imediat ce se încarcă pagina
     </script>
 
     <div id="popupOverlay" class="hidden">

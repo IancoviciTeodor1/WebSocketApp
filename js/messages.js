@@ -61,9 +61,11 @@ function displayMessage(message) {
     const fileElements = messageItem.querySelectorAll('[data-file-id]');
     fileElements.forEach(fileEl => {
         const fileId = fileEl.getAttribute('data-file-id');
-        fileEl.addEventListener('contextmenu', (e) => {
-            showMessageActionsMenu(e, 'file', fileId);
-        });
+        if (fileId && parseInt(message.senderId) === parseInt(userId)) {
+            fileEl.addEventListener('contextmenu', (e) => {
+                showMessageActionsMenu(e, 'file', fileId);
+            });
+        }
     });
 
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -151,6 +153,12 @@ async function sendMessage() {
         return;
     }
 
+    if (messageContent.startsWith('/')) {
+        handleChatCommand(messageContent);
+        messageInput.value = '';
+        return;
+    }
+
     const filePayloads = [];
 
     // Convertim fișierele în base64
@@ -211,6 +219,100 @@ async function sendMessage() {
                 console.error('Error sending message:', error);
                 alert('Failed to send message.');
             });
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('messageInput').addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            sendMessage();
+        }
+    });
+});
+
+function handleChatCommand(commandText) {
+    const parts = commandText.trim().split(' ');
+    const command = parts[0].toLowerCase(); // ex: "/party"
+    const args = parts.slice(1); // ex: ["user123"]
+
+    switch (command) {
+        case '/party1':
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'command',
+                    command: 'party',
+                    senderId: localStorage.getItem('userId'),
+                    conversationId: currentConversationId
+                }));
+            }
+            break;
+
+        case '/message':
+            const targetUsername = args[0];
+            if (targetUsername) {
+                getMemberIdByUsername(currentConversationId, targetUsername).then(targetUserId => {
+                    if (targetUserId) {
+                        openUserConversation(targetUserId);
+                    } else {
+                        alert(`User '${targetUsername}' not found in this conversation.`);
+                    }
+                });
+            } else {
+                alert('Usage: /message username');
+            }
+            break;
+
+        case '/leave':
+            if (!currentConversationId) {
+                alert('No conversation selected.');
+                return;
+            }
+            if (currentConversationType !== 'group') {
+                alert('The "/leave" command only works in group conversations.');
+                return;
+            }
+            leaveGroup(currentConversationId);
+            break;
+        
+        case '/clear':
+            const messagesDiv = document.getElementById('messages');
+            if (messagesDiv) {
+                messagesDiv.innerHTML = '';
+                console.log('Messages cleared from UI.');
+            } else {
+                console.warn('Messages container not found.');
+            }
+            break;
+
+        case '/party':
+            if (!currentConversationId) {
+                alert('You must be in a conversation to use this command.');
+                break;
+            }
+
+            // Trimite către toți membrii conversației
+            socket.send(JSON.stringify({
+                type: 'party',
+                conversationId: currentConversationId
+            }));
+
+            // Opțional: declanșează local imediat
+            triggerConfetti();
+            break;   
+    
+        case '/help':
+            alert(`Comenzi disponibile:
+            
+/clear - visually clears the conversation
+/help - displays this message
+/leave - leaves the current conversation
+/message [username] - opens a private conversation with the specified user
+/party - triggers a visual confetti effect for all participants`);
+            break;
+
+        default:
+            alert(`Unknown command: ${command}`);
     }
 }
 
@@ -287,6 +389,46 @@ function showMessageActionsMenu(event, type, id) {
     });
 }
 
+async function getMemberIdByUsername(conversationId, username) {
+    const response = await fetch(`${BASE_URL}/api/groupDetails.php?groupId=${conversationId}`);
+    const data = await response.json();
+
+    if (data && data.members) {
+        const member = data.members.find(m => m.username === username);
+        return member ? member.userId : null;
+    }
+
+    return null;
+}
+
+function triggerConfetti() {
+    const duration = 5 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 2000 };
+
+    function randomInRange(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    const interval = setInterval(function () {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+            return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        // Confetti from left and right
+        confetti(Object.assign({}, defaults, {
+            particleCount,
+            origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+        }));
+        confetti(Object.assign({}, defaults, {
+            particleCount,
+            origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+        }));
+    }, 250);
+}
 
 function deleteMessage(messageId) {
     const userId = localStorage.getItem('userId');
@@ -311,7 +453,6 @@ function deleteMessage(messageId) {
         console.error('WebSocket not connected.');
     }
 }
-
 
 
 function deleteFile(fileId) {
@@ -415,67 +556,4 @@ function updateFilePreview() {
 function removeFile(index) {
     selectedFiles.splice(index, 1); // Eliminăm fișierul
     updateFilePreview();
-}
-
-
-let offset = 0; // Offset pentru paginare
-const limit = 20; // Număr de conversații per cerere
-let loading = false; // Indicator pentru a preveni cererile multiple
-let allLoaded = false; // Indicator dacă toate conversațiile au fost încărcate
-
-// Funcție pentru a încărca conversațiile recente
-function loadRecentConversations(offset = 0, limit = 20) {
-    fetch(`${BASE_URL}/api/recent_conversations.php?offset=${offset}&limit=${limit}`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${token}`
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            console.error('HTTP Error:', response.status);
-            return response.text().then(err => {
-                throw new Error(`Server Error: ${err}`);
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Received data:', data);
-        if (Array.isArray(data)) {
-            const recentList = document.getElementById('recentConversations');
-            recentList.innerHTML = '';
-            data.forEach(conversation => {
-                console.log('Conversation data:', conversation);
-
-                const conversationItem = document.createElement('div');
-                conversationItem.classList.add('conversation-item');
-
-                // Afișează numele conversației folosind "conversationName"
-                conversationItem.textContent = conversation.conversationName || 'Unnamed conversation';
-                // Adaugă o pictogramă diferită în funcție de tipul conversației
-                const icon = document.createElement('span');
-                icon.classList.add('material-icons');
-                if (conversation.conversationType === 'group') {
-                    icon.textContent = 'group';
-                } else if (conversation.conversationType === 'one-on-one') {
-                    icon.textContent = 'person';
-                } else {
-                    icon.textContent = 'chat';
-                }
-                conversationItem.prepend(icon);
-                // Configurăm acțiunea la click pentru conversație
-                conversationItem.onclick = () =>
-                    openConversation(conversation.conversationId, conversation.conversationType);
-
-                recentList.appendChild(conversationItem);
-            });
-        } else {
-            console.error('Unexpected data format:', data);
-        }
-    })
-    .catch(error => {
-        console.error('Error loading recent conversations:', error);
-        alert('Failed to load recent conversations.');
-    });
 }

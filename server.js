@@ -554,6 +554,22 @@ initializeDatabase().then(connection => {
                 } catch (error) {
                     console.error('Error deleting file via WebSocket:', error);
                 }
+            }
+
+            else if (data.type === 'party') {
+                const { conversationId } = data;
+            
+                // Transmite mesajul de tip "party" tuturor clienților din acea conversație
+                clients.forEach((clientConversationId, clientSocket) => {
+                    if (clientConversationId === conversationId && clientSocket.readyState === WebSocket.OPEN) {
+                        clientSocket.send(JSON.stringify({
+                            type: 'party',
+                            conversationId
+                        }));
+                    }
+                });
+            
+                console.log(`Party command broadcasted to conversation ${conversationId}`);
             }            
         });
     
