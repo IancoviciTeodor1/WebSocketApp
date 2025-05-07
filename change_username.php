@@ -27,15 +27,21 @@ if (isset($_POST['submit'])) {
     } elseif (!ctype_alnum($new_username)) {
         $message = "Username must only contain alphanumeric characters.";
         $error = 1;
+    } elseif ($new_username === $current_username) {
+        $message = "New username must be different from the current one.";
+        $error = 1;
     } else {
-        if ($user) {
-            $update_stmt = $db->prepare("UPDATE users SET username = (?) WHERE id = (?)");
-            $update_stmt->execute([$new_username, $user_id]);
+        $check_stmt = $db->prepare("SELECT id FROM users WHERE username = ? AND id != ?");
+        $check_stmt->execute([$new_username, $user_id]);
+        $existing_user = $check_stmt->fetch();
 
-            $message = "Username successfully changed.";
-        } else {
-            $message = "Error.";
+        if ($existing_user) {
+            $message = "This username is already taken.";
             $error = 1;
+        } else {
+            $update_stmt = $db->prepare("UPDATE users SET username = ? WHERE id = ?");
+            $update_stmt->execute([$new_username, $user_id]);
+            $message = "Username successfully changed.";
         }
     }
 

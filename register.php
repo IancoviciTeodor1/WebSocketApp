@@ -21,11 +21,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit();
     }
 
+    if (strlen($password) < 8) {
+        echo json_encode(['error' => 'Password must be at least 8 characters long']);
+        exit();
+    }
+
     // Verifică dacă email-ul există deja
     $stmt = $db->prepare('SELECT * FROM users WHERE email = ?');
     $stmt->execute([$email]);
     if ($stmt->fetch()) {
         echo json_encode(['error' => 'Email already registered']);
+        exit();
+    }
+
+    // Verifică dacă username-ul există deja
+    $stmt = $db->prepare('SELECT * FROM users WHERE username = ?');
+    $stmt->execute([$username]);
+    if ($stmt->fetch()) {
+        echo json_encode(['error' => 'Username already taken']);
         exit();
     }
 
