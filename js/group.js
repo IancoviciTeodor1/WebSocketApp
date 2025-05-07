@@ -1,3 +1,4 @@
+/*
 document.addEventListener('DOMContentLoaded', () => {
     const createGroupButton = document.getElementById('createGroupButton');
     const groupForm = document.getElementById('groupForm');
@@ -47,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 });
+*/
 
 // Funcție pentru căutarea utilizatorilor
 function searchInvitationUsers() {
@@ -60,12 +62,18 @@ function loadUserList(query) {
         .then(response => response.json())
         .then(users => {
             const inviteUserList = document.getElementById('inviteUserList');
-            inviteUserList.innerHTML = ''; // Curățăm lista anterioară
+            inviteUserList.innerHTML = ''; // Curăță lista anterioară
+
+            // Se obtine lista ID-urilor deja selectate
+            const selectedUserIds = Array.from(document.querySelectorAll('#selectedUserList li'))
+                .map(li => li.getAttribute('data-user-id'));
+
             users.forEach(user => {
+                const isChecked = selectedUserIds.includes(user.id.toString());
                 const userDiv = document.createElement('div');
                 userDiv.innerHTML = `
                     <label>
-                        <input type="checkbox" value="${user.id}" onclick="toggleUserSelection(this)"> ${user.username}
+                        <input type="checkbox" value="${user.id}" onclick="toggleUserSelection(this)" ${isChecked ? 'checked' : ''}> ${user.username}
                     </label>
                 `;
                 inviteUserList.appendChild(userDiv);

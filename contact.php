@@ -20,8 +20,6 @@ $mail_user = getenv('MAIL_USER');
 $mail_pwd = getenv('MAIL_PWD');
 $mail_recipient = getenv('MAIL_RECIPIENT');
 
-
-
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (!empty($_POST['usercode'])) {
         die('Spam detected');
@@ -31,27 +29,58 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = htmlspecialchars($_POST['email']);
     $message = htmlspecialchars($_POST['message']);
 
+    
+    $responseBody = "Hello $name, <br><br> Thank you for reaching out to us. We have received your message and will get back to you as soon as possible. <br><br> Your message: <br> $message <br><br> Best regards, <br> Wavey Support Team";
+
+    
+    $categories = [
+        'login' => [
+            'keywords' => ['conectare', 'logare', 'autentificare', 'nu pot intra', 'nu merge sa ma conectez'],
+            'response' => "Hello $name, <br><br> We're sorry you're having trouble logging in. Please double-check your credentials and try again. If the issue persists, try resetting your password or contact our support team. <br><br> Best regards, <br> Wavey Support Team"
+        ],
+        'image_upload' => [
+            'keywords' => ['nu merge sa trimit o imagine', 'imaginea nu se trimite', 'problema trimitere imagine', 'nu pot trimite poza'],
+            'response' => "Hello $name, <br><br> We're sorry you're having trouble sending images. Please make sure the file you're trying to send has one of the following supported extensions: .xbm; .tif; .pjp; .apng; .jpeg; .heif; .ico; .tiff; .webp; .svgz; .jpg; .heic; .gif; .svg; .png; .bmp; .pjpeg; .avif. If you're still having issues, feel free to reach out to us! <br><br> Best regards, <br> Wavey Support Team"
+        ],
+        'messaging' => [
+            'keywords' => ['trimitere mesaj', 'nu se trimite mesajul', 'mesajele nu merg', 'nu pot scrie', 'nu merge sa trimit mesaje', 'mi se trimit mesajele'],
+            'response' => "Hello $name, <br><br> We're sorry you're having trouble sending messages. Please make sure you have a stable internet connection and try refreshing the page. We're working to keep everything running smoothly. If the problem persists, let us know and we'll be happy to assist you further. <br><br> Best regards, <br> Wavey Support Team"
+        ],
+        'notifications' => [
+            'keywords' => ['nu primesc notificari', 'notificarile nu apar', 'problema notificari'],
+            'response' => "Hello $name, <br><br> We're sorry you're having trouble receiving notifications. Please make sure you've allowed notifications in your browser/app settings. If the problem persists, let us know and we'll be happy to assist you further. <br><br> Best regards, <br> Wavey Support Team"
+        ],
+        
+    ];
+
+    
+    foreach ($categories as $category) {
+        foreach ($category['keywords'] as $keyword) {
+            if (stripos($message, $keyword) !== false) {
+                $responseBody = $category['response'];
+                break 2;  
+            }
+        }
+    }
+
     $mail = new PHPMailer(true);
 
     try {
         $mail->isSMTP();
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
-        // Your email address (the one that sends the email)
-        $mail->Username = $mail_user; 
-        // Enable 2FA and use an App Password
-        $mail->Password = $mail_pwd; 
+        $mail->Username = $mail_user;
+        $mail->Password = $mail_pwd;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
 
         $mail->AddReplyTo($email);
         $mail->setFrom($email, $name);
-        // The email address that receives all the emails
         $mail->addAddress($mail_recipient, 'Recipient Name');
 
         $mail->isHTML(true);
         $mail->Subject = 'New message submission!';
-        $mail->Body    = "<strong>Name:</strong> $name <br> <strong>Email:</strong> $email <br><strong>Message:</strong> <br> $message";
+        $mail->Body = "<strong>Name:</strong> $name <br> <strong>Email:</strong> $email <br><strong>Message:</strong> <br> $message";
         $mail->AltBody = "Name: $name \n Email: $email \n Message: $message";
 
         if ($mail->send()) {
@@ -60,18 +89,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $error = 'Message could not be sent.';
         }
 
+        
         $mail->clearAllRecipients();
         $mail->addAddress($email, $name);
         $mail->Subject = 'Thank you for contacting us!';
-        $mail->Body    = "Hello $name, <br><br> Thank you for reaching out to us. We have received your message and will get back to you as soon as possible. <br><br> Your message: <br> $message <br><br> Best regards, <br> Wavey Support Team";
-        $mail->AltBody = "Hello $name, \n\n Thank you for reaching out to us. We have received your message and will get back to you as soon as possible. \n\n Your message: \n $message \n\n Best regards, \n Wavey Support Team";
+        $mail->Body = $responseBody;
+        $mail->AltBody = strip_tags(str_replace("<br>", "\n", $responseBody));
 
         $mail->send();
 
     } catch (Exception $e) {
         echo "Mailer Error: {$mail->ErrorInfo}";
     }
-    
 }
 ?>
 
@@ -161,6 +190,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         a:hover {
             background-color: #0056b3;
         }
+
+        .whatsapp-button {
+            display: inline-flex;
+            align-items: center;
+            background-color: #25D366;
+            color: white;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 15px;
+            transition: background-color 0.3s ease;
+        }
+        .whatsapp-button:hover {
+            background-color: #1ebe5d;
+        }
+
+
     </style>
 </head>
 <body>
@@ -189,6 +237,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             <input type="submit" value="Send Message">
         </form>
+
+        <a class="whatsapp-button" href="https://wa.me/40712323123" target="_blank">
+    <img src="https://img.icons8.com/color/48/000000/whatsapp--v1.png" alt="WhatsApp" style="vertical-align: middle; width: 24px; height: 24px; margin-right: 8px;">
+    Contactează-ne pe WhatsApp</a>
+
 
         <a href="index.php">Go Back</a>
     </div>
