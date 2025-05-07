@@ -124,8 +124,8 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         <!-- Main Chat Area -->
         <div id="main">
             <div id="conversation">
-                <div id="messages"></div>
                 <button class="join" type="button" id="call-button" onclick="call()">Call</button>
+                <div id="messages"></div>
                 <input type="file" id="fileInput" multiple style="display: none;" accept="image/*" onchange="previewSelectedImages(event)">
                 <div id="filePreview" style="margin-top: 10px;"></div>
                 <div style="display: flex; align-items: center; gap: 10px; background-color:#325D75">
@@ -171,7 +171,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         console.log(currentUsername);
 
         function call() {
-            location.href= `http:\/\/localhost:3001/#${currentConversationId}?user=${localStorage.getItem('username')}`;
+            location.href = `http:\/\/localhost:3001/#${currentConversationId}?user=${localStorage.getItem('username')}`;
         }
 
         // Încarcă primele conversații la inițializare
