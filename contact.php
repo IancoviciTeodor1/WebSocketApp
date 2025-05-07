@@ -111,63 +111,88 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Us</title>
     <style>
+        :root {
+            --orange: #DD622E;
+            --cream: #F1E9DB;
+            --light-blue: #A7D0DD;
+            --medium-blue: #5DB7DE;
+            --dark-blue: #325D75;
+            --dark: #06020C;
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f4;
+            background-color: var(--dark-blue);
+            color: var(--dark);
         }
+
         .container {
             width: 50%;
             margin: 50px auto;
-            background-color: white;
+            background-color: var(--medium-blue);
             padding: 40px;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
+
         h1 {
             text-align: center;
-            color: #333;
+            color: var(--cream);
         }
+
         label {
             display: block;
             margin: 10px 0 5px;
             font-size: 1.1em;
+            color: var(--dark);
         }
+
         input, textarea {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--light-blue);
             border-radius: 5px;
+            background-color: var(--cream);
+            color: var(--dark);
         }
+
         textarea {
             resize: vertical;
             height: 130px;
         }
+
         input[type="submit"] {
-            background-color: #4CAF50;
+            background-color: var(--orange);
             color: white;
-            cursor: pointer;
+            border: none;
+            transition: background-color 0.3s ease;
         }
+
         input[type="submit"]:hover {
-            background-color: #45a049;
+            background-color: var(--dark);
         }
+
         .message {
             text-align: center;
             padding: 10px;
             margin: 10px 0;
         }
+
         .success {
             background-color: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
         }
+
         .error {
             background-color: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+
         .fkskfdfv {
             opacity: 0;
             position: absolute;
@@ -177,23 +202,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             width: 0;
             z-index: -1;
         }
+
         a {
-            padding: 10px;
+            display: inline-block;
+            padding: 10px 15px;
             border: none;
             border-radius: 5px;
-            background-color: #007BFF;
+            background-color: var(--orange);
             color: white;
-            white-space: nowrap;
             text-decoration: none;
             font-size: 16px;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
         }
+
         a:hover {
-            background-color: #0056b3;
+            background-color: var(--dark);
         }
 
         .whatsapp-button {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             background-color: #25D366;
             color: white;
             text-decoration: none;
@@ -201,18 +231,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-radius: 5px;
             font-weight: bold;
             font-size: 16px;
-            margin-top: 15px;
+            height: 44px;
+            box-sizing: border-box;
             transition: background-color 0.3s ease;
         }
+
+        .whatsapp-button img {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+        }
+
         .whatsapp-button:hover {
             background-color: #1ebe5d;
         }
 
-
+        .button-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1>Send Us A Message</h1>
 
@@ -238,13 +281,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <input type="submit" value="Send Message">
         </form>
 
-        <a class="whatsapp-button" href="https://wa.me/40712323123" target="_blank">
-    <img src="https://img.icons8.com/color/48/000000/whatsapp--v1.png" alt="WhatsApp" style="vertical-align: middle; width: 24px; height: 24px; margin-right: 8px;">
-    Contactează-ne pe WhatsApp</a>
-
-
-        <a href="index.php">Go Back</a>
+        <div class="button-row">
+            <a class="whatsapp-button" href="https://wa.me/40712323123" target="_blank">
+                <img src="https://img.icons8.com/color/48/000000/whatsapp--v1.png" alt="WhatsApp" style="vertical-align: middle; width: 24px; height: 24px; margin-right: 8px;">
+                Contactează-ne pe WhatsApp
+            </a>
+            <a class="back-button" href="index.php">Go Back</a>
+        </div>
     </div>
-
 </body>
 </html>
