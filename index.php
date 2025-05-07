@@ -100,6 +100,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
                     <input type="file" id="fileInput" multiple style="display: none;">
                     <input type="button" value="Browse..." onclick="document.getElementById('fileInput').click();" />
                     <div id="filePreview" style="margin-top: 10px;"></div>
+                    <button class="join" type="button" id="call-button" onclick="call()">Call</button>
                 </div>
             </div>
         </div>
@@ -1647,6 +1648,10 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
         // Încarcă primele conversații la inițializare
         loadRecentConversations();
+
+        function call() {
+            location.href= `http:\/\/localhost:3001/#${currentConversationId}?user=${localStorage.getItem('username')}`;
+        }
     </script>
 </body>
 </html>
