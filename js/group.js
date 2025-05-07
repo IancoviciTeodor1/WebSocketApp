@@ -13,7 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Trimite datele pentru crearea grupului
     submitGroupButton.addEventListener('click', () => {
         const groupName = document.getElementById('groupName').value.trim();
-        const selectedUsers = Array.from(document.querySelectorAll('#selectedUserList li')).map(item => item.getAttribute('data-user-id'));
+        const selectedUsers = Array.from(document.querySelectorAll('#selectedUserList .user-card')) // Select by class
+            .map(card => card.getAttribute('data-user-id'));
 
         if (!groupName || selectedUsers.length === 0) {
             alert('Please enter a group name and select at least one user.');
@@ -62,21 +63,27 @@ function loadUserList(query) {
         .then(response => response.json())
         .then(users => {
             const inviteUserList = document.getElementById('inviteUserList');
-            inviteUserList.innerHTML = ''; // Curăță lista anterioară
-
-            // Se obtine lista ID-urilor deja selectate
-            const selectedUserIds = Array.from(document.querySelectorAll('#selectedUserList li'))
-                .map(li => li.getAttribute('data-user-id'));
+            inviteUserList.innerHTML = ''; // Curățăm lista anterioară
 
             users.forEach(user => {
-                const isChecked = selectedUserIds.includes(user.id.toString());
-                const userDiv = document.createElement('div');
-                userDiv.innerHTML = `
-                    <label>
-                        <input type="checkbox" value="${user.id}" onclick="toggleUserSelection(this)" ${isChecked ? 'checked' : ''}> ${user.username}
-                    </label>
-                `;
-                inviteUserList.appendChild(userDiv);
+                const card = document.createElement('div');
+                card.classList.add('invite-user-card');
+                card.textContent = user.username;
+                card.setAttribute('data-user-id', user.id);
+                card.setAttribute('data-username', user.username);
+                card.onclick = () => handleInviteCardClick(card);
+                inviteUserList.appendChild(card);
+            });
+
+            // După popularea listei de invitații, actualizăm starea selectată a cardurilor
+            const selectedUserGrid = document.getElementById('selectedUserList');
+            const currentlySelectedUserIds = Array.from(selectedUserGrid.querySelectorAll('.user-card'))
+                .map(selectedCard => selectedCard.dataset.userId);
+
+            inviteUserList.querySelectorAll('.invite-user-card').forEach(inviteCard => {
+                if (currentlySelectedUserIds.includes(inviteCard.dataset.userId)) {
+                    inviteCard.classList.add('selected');
+                }
             });
         })
         .catch(error => {
@@ -84,38 +91,41 @@ function loadUserList(query) {
         });
 }
 
-// Funcție pentru a adăuga sau elimina utilizatori din lista selectată
-function toggleUserSelection(checkbox) {
-    const userId = checkbox.value;
-    const username = checkbox.parentElement.textContent.trim();
+// Funcție pentru a gestiona click-ul pe un card de invitație
+function handleInviteCardClick(clickedInviteCard) {
+    const userId = clickedInviteCard.dataset.userId;
+    const username = clickedInviteCard.dataset.username;
+    const selectedUserGrid = document.getElementById('selectedUserList');
 
-    const selectedUserList = document.getElementById('selectedUserList');
+    clickedInviteCard.classList.toggle('selected');
 
-    if (checkbox.checked) {
-        // Adăugăm utilizatorul în lista selectată
-        const li = document.createElement('li');
-        li.setAttribute('data-user-id', userId);
-        li.textContent = username;
-        const removeButton = document.createElement('button');
-        removeButton.textContent = 'Remove';
-        removeButton.onclick = () => removeUserFromList(li, userId);
-        li.appendChild(removeButton);
-        selectedUserList.appendChild(li);
+    if (clickedInviteCard.classList.contains('selected')) {
+        // Cardul a fost selectat, adăugăm în grila de jos
+        const newSelectedCard = document.createElement('div');
+        newSelectedCard.classList.add('user-card'); // Clasa pentru cardurile din grila de jos
+        newSelectedCard.setAttribute('data-user-id', userId);
+        newSelectedCard.textContent = username;
+        // Folosim direct funcția existentă pentru eliminare, adaptată
+        newSelectedCard.onclick = () => removeUserFromSelectedList(newSelectedCard, userId);
+        selectedUserGrid.appendChild(newSelectedCard);
     } else {
-        // Eliminăm utilizatorul din lista selectată
-        const userItem = selectedUserList.querySelector(`[data-user-id="${userId}"]`);
-        if (userItem) {
-            selectedUserList.removeChild(userItem);
+        // Cardul a fost deselectat, eliminăm din grila de jos
+        const cardToRemoveFromGrid = selectedUserGrid.querySelector(`.user-card[data-user-id="${userId}"]`);
+        if (cardToRemoveFromGrid) {
+            cardToRemoveFromGrid.remove();
         }
     }
 }
 
-// Elimină un utilizator din lista selectată
-function removeUserFromList(userItem, userId) {
-    userItem.remove();
-    // De-selectează checkbox-ul corespunzător
-    const checkbox = document.querySelector(`input[value="${userId}"]`);
-    if (checkbox) checkbox.checked = false;
+// Elimină un utilizator din lista selectată (grila de jos) și deselectează cardul din lista de invitații (sus)
+function removeUserFromSelectedList(clickedSelectedCard, userId) {
+    clickedSelectedCard.remove(); // Elimină cardul din grila de jos
+
+    // Deselectează cardul corespunzător în lista de invitații (sus)
+    const inviteCardToDeselect = document.querySelector(`#inviteUserList .invite-user-card[data-user-id="${userId}"]`);
+    if (inviteCardToDeselect) {
+        inviteCardToDeselect.classList.remove('selected');
+    }
 }
 
 // Trimite invitațiile pentru utilizatorii selectați
@@ -146,76 +156,194 @@ function sendInvitations(groupId, selectedUsers) {
 
 // Funcție pentru a arăta butonul de setări pentru grup
 function showGroupSettingsButton(conversationId) {
-    // Verificăm dacă butonul există deja
-    const existingButton = document.getElementById('groupSettingsButton');
-    if (existingButton) {
-        return; // Dacă butonul există deja, nu îl mai adăugăm
-    }
-
-    const settingsButton = document.createElement('button');
-    settingsButton.id = 'groupSettingsButton'; // Atribuim un ID pentru a-l identifica ușor
-    settingsButton.textContent = 'Group Settings';
-    settingsButton.onclick = function() {
-        openGroupSettingsPopup(conversationId);
+    const settingsbutton = document.getElementById('GroupsettingsButton');
+    settingsbutton.style.display = 'block';
+    // Store the conversation ID for use in the settings
+    settingsbutton.setAttribute('data-conversation-id', conversationId);
+    settingsbutton.onclick = () => {
+        openGroupSettingsPopup(settingsbutton.getAttribute('data-conversation-id'));
     };
-
-    // Plasează butonul lângă cel de creare a grupului
-    document.getElementById('sidebar').appendChild(settingsButton);
 }
 
 function hideGroupSettingsButton() {
-    const settingsButton = document.getElementById('groupSettingsButton');
-    if (settingsButton) {
-        settingsButton.remove(); // Elimină butonul din DOM
-    }
+    const settingsButton = document.getElementById('GroupsettingsButton');
+    settingsButton.style.display = 'none';
 }
 
 
 // Funcție pentru a deschide fereastra pop-up de setări ale grupului
 function openGroupSettingsPopup(conversationId) {
-    const existingPopup = document.querySelector('.popup');
+    const existingPopup = document.querySelector('#groupSettingsPopup');
     if (existingPopup) {
         existingPopup.remove();
     }
 
-    // Deschide fereastra pop-up
-    const popup = document.createElement('div');
-    popup.classList.add('popup');
-    popup.innerHTML = `
-    <div id="groupSettingsContainer">
-        <h3>Group Settings</h3>
-        <label for="newGroupName">Group Name:</label>
-        <input type="text" id="newGroupName" placeholder="New group name">
-        <button id="updateGroupNameButton" onclick="updateGroupName(${conversationId})">Update Group Name</button>
+    // Create the popup structure with unique IDs for settings popup
+    const popupOverlay = document.createElement('div');
+    popupOverlay.id = 'groupSettingsPopup';
+    popupOverlay.classList.add('popup-overlay');
 
-        <h4>Members:</h4>
-        <ul id="groupMembersList" onclick="handleMemberClick(event)"></ul>
+    popupOverlay.innerHTML = `
+        <div class="popup-container">
+            <div class="popup-header">
+                <h3>Group Settings</h3>
+                <span class="close-popup material-icons">close</span>
+            </div>
+            <div class="popup-content">
+                <div class="form-group">
+                    <label for="newGroupName">Group Name:</label>
+                    <input type="text" id="newGroupName" placeholder="New group name">
+                    <button id="updateGroupNameButton" onclick="updateGroupName(${conversationId})">Update Group Name</button>
+                </div>
 
-        <div id="inviteUserSearch">
-            <h4>Invite Users:</h4>
-            <input type="text" id="inviteUserSearchInput" placeholder="Search users">
-            <div id="inviteUserList2"></div>
+                <div class="members-section">
+                    <h4>Members:</h4>
+                    <ul id="groupMembersList" class="members-list"></ul>
+                </div>
+
+                <div class="invite-section">
+                    <h4>Invite Users:</h4>
+                    <div class="search-container">
+                        <input type="text" id="inviteUserSearchInputSettings" placeholder="Search users" oninput="searchUsersForInviteSettings()">
+                    </div>
+                    <div id="inviteUserListSettings" class="search-results"></div>
+                    <div id="selectedUserListSettings" class="selected-users-grid"></div>
+                    <button class="invite-button" onclick="inviteUsersToGroupSettings(${conversationId})">Invite Users</button>
+                </div>
+            </div>
+            <div class="popup-footer">
+                <button class="leave-button" onclick="leaveGroup(${conversationId})">Leave Group</button>
+                <button class="close-button" onclick="closePopup()">Close</button>
+            </div>
         </div>
-
-        <button onclick="inviteUsersToGroup(${conversationId})">Invite Users</button>
-        <button onclick="leaveGroup(${conversationId})" style="background-color: red; color: white; margin-top: 20px;">Leave Group</button>
-        <button onclick="closePopup()">Close</button>
-    </div>
     `;
 
-    document.body.appendChild(popup);
+    document.body.appendChild(popupOverlay);
 
-    if (currentUserRole === 'member') {
-        document.getElementById('newGroupName').setAttribute('readonly', 'readonly');
-        document.getElementById('updateGroupNameButton').style.display = 'none';
+    // Add event listeners for closing the popup
+    popupOverlay.querySelector('.close-popup').addEventListener('click', closePopup);
+    popupOverlay.addEventListener('click', (e) => {
+        if (e.target === popupOverlay) {
+            closePopup();
+        }
+    });
+
+    // Load group details and users for invite (settings version)
+    loadGroupDetails(conversationId);
+    loadUserListForInviteSettings(conversationId);
+}
+
+// --- Settings popup invite logic with unique IDs ---
+
+function loadUserListForInviteSettings(conversationId) {
+    fetch(`${BASE_URL}/api/get_users_for_invite.php?groupId=${conversationId}&excludeUserId=${userId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Failed to fetch users for invite: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(users => {
+            if (users.error) {
+                console.error('Error loading users for invite:', users.error);
+                alert('Failed to load users for invite.');
+                return;
+            }
+
+            // Populate invite user list for settings popup
+            const inviteUserList = document.getElementById('inviteUserListSettings');
+            if (inviteUserList) {
+                inviteUserList.innerHTML = '';
+                users.forEach(user => {
+                    const userCard = document.createElement('div');
+                    userCard.classList.add('invite-user-card');
+                    userCard.textContent = user.username;
+                    userCard.setAttribute('data-user-id', user.id);
+                    userCard.onclick = () => handleInviteCardClickSettings(userCard);
+                    inviteUserList.appendChild(userCard);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading users for invite:', error);
+            alert('An error occurred while loading users for invite.');
+        });
+}
+
+function handleInviteCardClickSettings(clickedInviteCard) {
+    const userId = clickedInviteCard.dataset.userId;
+    const username = clickedInviteCard.textContent;
+    const selectedUserGrid = document.getElementById('selectedUserListSettings');
+
+    clickedInviteCard.classList.toggle('selected');
+
+    if (clickedInviteCard.classList.contains('selected')) {
+        // Add to selected grid
+        const newSelectedCard = document.createElement('div');
+        newSelectedCard.classList.add('user-card');
+        newSelectedCard.setAttribute('data-user-id', userId);
+        newSelectedCard.textContent = username;
+        newSelectedCard.onclick = () => removeUserFromSelectedListSettings(newSelectedCard, userId);
+        selectedUserGrid.appendChild(newSelectedCard);
+    } else {
+        // Remove from selected grid
+        const cardToRemoveFromGrid = selectedUserGrid.querySelector(`.user-card[data-user-id="${userId}"]`);
+        if (cardToRemoveFromGrid) {
+            cardToRemoveFromGrid.remove();
+        }
     }
+}
 
-    // Eveniment pentru căutarea utilizatorilor
-    document.getElementById('inviteUserSearchInput').addEventListener('input', searchUsersForInvite);
+function removeUserFromSelectedListSettings(clickedSelectedCard, userId) {
+    clickedSelectedCard.remove();
+    const inviteCardToDeselect = document.querySelector(`#inviteUserListSettings .invite-user-card[data-user-id="${userId}"]`);
+    if (inviteCardToDeselect) {
+        inviteCardToDeselect.classList.remove('selected');
+    }
+}
 
-    // Încarcă detaliile grupului și utilizatorii de invitat
-    loadGroupDetails(currentConversationId);
-    loadUserListForInvite(currentConversationId);
+function searchUsersForInviteSettings() {
+    const searchTerm = document.getElementById('inviteUserSearchInputSettings').value.toLowerCase();
+    const userItems = document.querySelectorAll('#inviteUserListSettings .invite-user-card');
+    userItems.forEach(item => {
+        const username = item.textContent.toLowerCase();
+        item.style.display = username.includes(searchTerm) ? 'block' : 'none';
+    });
+}
+
+function inviteUsersToGroupSettings(conversationId) {
+    const selectedUserIds = Array.from(document.querySelectorAll('#selectedUserListSettings .user-card'))
+        .map(card => card.getAttribute('data-user-id'));
+
+    if (selectedUserIds.length > 0) {
+        fetch(`${BASE_URL}/api/inviteUsersToGroup.php`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    groupId: conversationId,
+                    userIds: selectedUserIds
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Users invited successfully');
+                loadGroupDetails(conversationId); // Reload group details
+            })
+            .catch(error => {
+                console.error('Error inviting users:', error);
+            });
+    } else {
+        alert('Please select users to invite.');
+    }
+}
+
+function closePopup() {
+    const popup = document.getElementById('groupSettingsPopup');
+    if (popup) {
+        popup.remove();
+    }
 }
 
 function handleMemberClick(event) {
@@ -283,6 +411,7 @@ function leaveGroup(groupId) {
         .then(data => {
             if (data.success) {
                 alert('You have left the group.');
+                document.getElementById('GroupsettingsButton').style.display = 'none'; // Ascunde butonul de setări
                 closePopup();
                 loadRecentConversations();
                 document.getElementById('conversation').style.display = 'none'; // Ascunde conversația
@@ -327,43 +456,52 @@ function removeMemberFromGroup(userId) {
         });
 }
 
-// Funcție pentru a închide pop-up-ul
-function closePopup() {
-    const popup = document.querySelector('.popup');
-    if (popup) {
-        popup.remove();
-    }
-}
 
 
 function loadGroupDetails(conversationId) {
     fetch(`${BASE_URL}/api/groupDetails.php?groupId=${conversationId}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Failed to fetch group details: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            document.getElementById('newGroupName').value = data.groupName;
+            if (data.error) {
+                console.error('Error loading group details:', data.error);
+                alert('Failed to load group details.');
+                return;
+            }
 
-            // Salvăm membrii pentru comenzi ulterioare
-            currentConversationMembers = data.members;
+            // Populate group name
+            const groupNameInput = document.getElementById('newGroupName');
+            if (groupNameInput) {
+                groupNameInput.value = data.groupName || '';
+            }
 
+            // Populate members list
             const groupMembersList = document.getElementById('groupMembersList');
-            groupMembersList.innerHTML = '';
+            if (groupMembersList) {
+                groupMembersList.innerHTML = '';
+                data.members.forEach(member => {
+                    const memberItem = document.createElement('li');
+                    memberItem.textContent = `${member.username} (${member.role})`;
+                    memberItem.setAttribute('data-user-id', member.userId);
+                    memberItem.setAttribute('data-user-role', member.role);
+                    memberItem.style.cursor = 'pointer';
+                    memberItem.onclick = (e) => showMemberActionsMenu(e, member);
+                    groupMembersList.appendChild(memberItem);
+                });
+            }
 
-            data.members.forEach(member => {
-                const memberItem = document.createElement('li');
-                memberItem.textContent = `${member.username} (${member.role})`;
-                memberItem.style.cursor = 'pointer';
-                memberItem.onclick = (e) => {
-                    showMemberActionsMenu(e, member);
-                };
-                groupMembersList.appendChild(memberItem);
-            });
+            // Save members for later use
+            currentConversationMembers = data.members;
         })
         .catch(error => {
             console.error('Error loading group details:', error);
+            alert('An error occurred while loading group details.');
         });
 }
-
-
 
 function showMemberActionsMenu(event, member) {
     // Elimină un meniu vechi dacă există
@@ -484,23 +622,43 @@ function updateGroupName(conversationId) {
 // Funcție pentru a încărca utilizatorii disponibili pentru invitație
 function loadUserListForInvite(conversationId) {
     fetch(`${BASE_URL}/api/get_users_for_invite.php?groupId=${conversationId}&excludeUserId=${userId}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Failed to fetch users for invite: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(users => {
             if (users.error) {
-                console.log(users.error);
+                console.error('Error loading users for invite:', users.error);
+                alert('Failed to load users for invite.');
                 return;
             }
-            displayInviteUserList(users); // Afișează lista de utilizatori
+
+            // Populate invite user list
+            const inviteUserList = document.getElementById('inviteUserList');
+            if (inviteUserList) {
+                inviteUserList.innerHTML = '';
+                users.forEach(user => {
+                    const userCard = document.createElement('div');
+                    userCard.classList.add('invite-user-card');
+                    userCard.textContent = user.username;
+                    userCard.setAttribute('data-user-id', user.id);
+                    userCard.onclick = () => handleInviteCardClick(userCard);
+                    inviteUserList.appendChild(userCard);
+                });
+            }
         })
         .catch(error => {
-            console.error('Error loading user list for invite:', error);
+            console.error('Error loading users for invite:', error);
+            alert('An error occurred while loading users for invite.');
         });
 }
 
 
 // Funcție pentru a afișa lista de utilizatori în div-ul de invitație
 function displayInviteUserList(users) {
-    const inviteUserList2 = document.getElementById('inviteUserList2');
+    const inviteUserList2 = document.getElementById('selectedUserList');
     inviteUserList2.innerHTML = ''; // Curăță lista anterioară
 
     users.forEach(user => {
@@ -511,14 +669,14 @@ function displayInviteUserList(users) {
                 <input type="checkbox" value="${user.id}" onclick="toggleUserSelectionForInvite(this)" style="margin-right: 5px;">${user.username}
             </label>
         `;
-        inviteUserList2.appendChild(userDiv);
+        selectedUserList.appendChild(userDiv);
     });
 }
 
 // Funcție pentru a căuta utilizatorii în lista de invitație
 function searchUsersForInvite() {
     const searchTerm = document.getElementById('inviteUserSearchInput').value.toLowerCase();
-    const userItems = document.querySelectorAll('#inviteUserList2 .user-invite-item');
+    const userItems = document.querySelectorAll('#inviteUserList .user-invite-item');
 
     userItems.forEach(item => {
         const username = item.textContent.toLowerCase();
@@ -538,7 +696,7 @@ function toggleUserSelectionForInvite(checkbox) {
 
 // Funcție pentru a invita utilizatori selectați în grup
 function inviteUsersToGroup(conversationId) {
-    const selectedUserIds = Array.from(document.querySelectorAll('#inviteUserList2 input[type="checkbox"]:checked'))
+    const selectedUserIds = Array.from(document.querySelectorAll('#inviteUserList input[type="checkbox"]:checked'))
         .map(checkbox => checkbox.value);
 
     if (selectedUserIds.length > 0) {
@@ -564,7 +722,14 @@ function inviteUsersToGroup(conversationId) {
         alert('Please select users to invite.');
     }
 }
+// document.addEventListener('DOMContentLoaded', () => {
+//     const GroupsettingsButton = document.getElementById('GroupsettingsButton');
+    
+//     GroupsettingsButton.addEventListener('click', () => {
 
+//         console.log('Group settings button clicked');
+//     });
+// },
 
 document.addEventListener('DOMContentLoaded', () => {
     const createGroupButton = document.getElementById('createGroupButton');
@@ -584,22 +749,27 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clear form fields
         document.getElementById('groupName').value = '';
         document.getElementById('groupSearchInput').value = '';
-        document.getElementById('inviteUserList').innerHTML = '';
-        document.getElementById('selectedUserList').innerHTML = '';
+        document.getElementById('inviteUserList').innerHTML = ''; // Clear invite cards
+        document.getElementById('selectedUserList').innerHTML = ''; // Clear selected user cards
     });
 
     // Close popup when clicking outside the form
     popupOverlay.addEventListener('click', (e) => {
         if (e.target === popupOverlay) {
             popupOverlay.classList.add('hidden');
+            // Clear form fields as above
+            document.getElementById('groupName').value = '';
+            document.getElementById('groupSearchInput').value = '';
+            document.getElementById('inviteUserList').innerHTML = ''; // Clear invite cards
+            document.getElementById('selectedUserList').innerHTML = ''; // Clear selected user cards
         }
     });
 
     // Submit group form
     submitGroupButton.addEventListener('click', () => {
         const groupName = document.getElementById('groupName').value.trim();
-        const selectedUsers = Array.from(document.querySelectorAll('#selectedUserList li'))
-            .map(item => item.getAttribute('data-user-id'));
+        const selectedUsers = Array.from(document.querySelectorAll('#selectedUserList .user-card')) // Select by class
+            .map(card => card.getAttribute('data-user-id'));
 
         if (!groupName || selectedUsers.length === 0) {
             alert('Please enter a group name and select at least one user.');

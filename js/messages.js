@@ -222,14 +222,283 @@ async function sendMessage() {
     }
 }
 
+// Add a variable to track the currently selected suggestion index
+let currentSuggestionIndex = -1;
+
 window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('messageInput').addEventListener('keydown', function(event) {
+    const messageInput = document.getElementById('messageInput');
+    
+    messageInput.addEventListener('keydown', function(event) {
+        const commandSuggestions = document.getElementById('commandSuggestions');
+        const isCommandSuggestionsVisible = commandSuggestions && commandSuggestions.style.display !== 'none';
+        
+        // Handle Enter key for sending message or selecting suggestion
         if (event.key === 'Enter') {
+            if (isCommandSuggestionsVisible && currentSuggestionIndex >= 0) {
+                // If suggestions are visible and an item is selected, choose that item
+                event.preventDefault();
+                const selectedItem = commandSuggestions.querySelectorAll('.suggestion-item')[currentSuggestionIndex];
+                if (selectedItem) {
+                    selectedItem.click();
+                }
+            } else {
+                // Normal send message behavior
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        // Handle arrow keys for navigation through suggestions
+        else if (isCommandSuggestionsVisible && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
             event.preventDefault();
-            sendMessage();
+            
+            const items = commandSuggestions.querySelectorAll('.suggestion-item');
+            if (items.length === 0) return;
+            
+            // Remove current selection highlight
+            if (currentSuggestionIndex >= 0 && currentSuggestionIndex < items.length) {
+                items[currentSuggestionIndex].classList.remove('selected');
+            }
+            
+            // Update selection index based on arrow key
+            if (event.key === 'ArrowDown') {
+                currentSuggestionIndex = (currentSuggestionIndex + 1) % items.length;
+            } else { // ArrowUp
+                currentSuggestionIndex = (currentSuggestionIndex - 1 + items.length) % items.length;
+            }
+            
+            // Add highlight to newly selected item
+            items[currentSuggestionIndex].classList.add('selected');
+            items[currentSuggestionIndex].scrollIntoView({ block: 'nearest' });
+        }
+    });
+    
+    // Add command suggestion system
+    messageInput.addEventListener('input', function() {
+        const inputValue = this.value.trim();
+        const commandSuggestions = document.getElementById('commandSuggestions');
+        
+        // Reset selection index when input changes
+        currentSuggestionIndex = -1;
+        
+        // Create suggestion container if it doesn't exist
+        if (!commandSuggestions) {
+            createCommandSuggestionsElement();
+        }
+        
+        // Show suggestions only if first character is "/"
+        if (inputValue === '/') {
+            showCommandSuggestions();
+        } else if (inputValue.startsWith('/')) {
+            // Filter suggestions based on what's typed
+            filterCommandSuggestions(inputValue);
+        } else {
+            hideCommandSuggestions();
+        }
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (e.target !== messageInput) {
+            hideCommandSuggestions();
         }
     });
 });
+
+// Available commands with descriptions
+const availableCommands = [
+    { command: "/message [username]", description: "Opens a private conversation with the specified user" },
+    { command: "/leave", description: "Leaves the current conversation" },
+    { command: "/clear", description: "Visually clears the conversation" },
+    { command: "/help", description: "Displays available commands" },
+    { command: "/party", description: "Triggers a confetti effect for all participants" }
+];
+
+function createCommandSuggestionsElement() {
+    const container = document.createElement('div');
+    container.id = 'commandSuggestions';
+    container.className = 'command-suggestions';
+    container.style.display = 'none';
+    container.style.position = 'absolute';
+    container.style.bottom = '55px';
+    container.style.left = '10px';
+    container.style.backgroundColor = 'white';
+    container.style.border = '1px solid #ccc';
+    container.style.borderRadius = '5px';
+    container.style.maxHeight = '200px';
+    container.style.overflowY = 'auto';
+    container.style.width = '300px';
+    container.style.zIndex = '1000';
+    container.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+    
+    const messageInput = document.getElementById('messageInput');
+    const parentElement = messageInput.parentNode;
+    parentElement.style.position = 'relative';
+    parentElement.appendChild(container);
+}
+
+function showCommandSuggestions() {
+    const suggestionsContainer = document.getElementById('commandSuggestions') || 
+                               createCommandSuggestionsElement();
+    
+    suggestionsContainer.innerHTML = '';
+    suggestionsContainer.style.display = 'block';
+    
+    // Reset selection index when showing new suggestions
+    currentSuggestionIndex = -1;
+    
+    availableCommands.forEach(cmd => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.style.padding = '8px 12px';
+        item.style.cursor = 'pointer';
+        item.style.borderBottom = '1px solid #eee';
+        item.style.display = 'flex';
+        item.style.flexDirection = 'column';
+        
+        const commandText = document.createElement('span');
+        commandText.textContent = cmd.command;
+        commandText.style.fontWeight = 'bold';
+        
+        const descriptionText = document.createElement('span');
+        descriptionText.textContent = cmd.description;
+        descriptionText.style.fontSize = '0.8em';
+        descriptionText.style.color = '#666';
+        
+        item.appendChild(commandText);
+        item.appendChild(descriptionText);
+        
+        item.addEventListener('click', function() {
+            const baseCommand = cmd.command.split(' ')[0];
+            document.getElementById('messageInput').value = baseCommand + ' ';
+            document.getElementById('messageInput').focus();
+            hideCommandSuggestions();
+            
+            // If it's a command that requires no parameters, add a space for readiness
+            if (cmd.command === '/help' || cmd.command === '/clear' || cmd.command === '/party' || cmd.command === '/leave') {
+                document.getElementById('messageInput').value = baseCommand;
+            }
+        });
+        
+        // Simplified event handlers for hover - don't override CSS classes
+        item.addEventListener('mouseover', function() {
+            // Remove previous selection
+            const items = suggestionsContainer.querySelectorAll('.suggestion-item');
+            items.forEach((itm, idx) => {
+                if (itm === this) {
+                    currentSuggestionIndex = idx;
+                    itm.classList.add('selected');
+                } else {
+                    itm.classList.remove('selected');
+                }
+            });
+        });
+        
+        item.addEventListener('mouseout', function() {
+            // Only remove highlight if not actively selected by keyboard
+            if (!this.classList.contains('selected')) {
+                this.style.backgroundColor = 'transparent';
+            }
+        });
+        
+        suggestionsContainer.appendChild(item);
+    });
+    
+    // Automatically select the first item when suggestions appear
+    if (suggestionsContainer.children.length > 0) {
+        currentSuggestionIndex = 0;
+        suggestionsContainer.children[0].classList.add('selected');
+    }
+}
+
+function hideCommandSuggestions() {
+    const suggestionsContainer = document.getElementById('commandSuggestions');
+    if (suggestionsContainer) {
+        suggestionsContainer.style.display = 'none';
+    }
+}
+
+function filterCommandSuggestions(inputValue) {
+    const suggestionsContainer = document.getElementById('commandSuggestions');
+    if (!suggestionsContainer) return;
+    
+    suggestionsContainer.innerHTML = '';
+    suggestionsContainer.style.display = 'block';
+    
+    // Reset selection when filtering
+    currentSuggestionIndex = -1;
+    
+    const filteredCommands = availableCommands.filter(cmd => 
+        cmd.command.toLowerCase().startsWith(inputValue.toLowerCase())
+    );
+    
+    if (filteredCommands.length === 0) {
+        hideCommandSuggestions();
+        return;
+    }
+    
+    filteredCommands.forEach(cmd => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.style.padding = '8px 12px';
+        item.style.cursor = 'pointer';
+        item.style.borderBottom = '1px solid #eee';
+        item.style.display = 'flex';
+        item.style.flexDirection = 'column';
+        
+        const commandText = document.createElement('span');
+        commandText.textContent = cmd.command;
+        commandText.style.fontWeight = 'bold';
+        
+        const descriptionText = document.createElement('span');
+        descriptionText.textContent = cmd.description;
+        descriptionText.style.fontSize = '0.8em';
+        descriptionText.style.color = '#666';
+        
+        item.appendChild(commandText);
+        item.appendChild(descriptionText);
+        
+        item.addEventListener('click', function() {
+            const baseCommand = cmd.command.split(' ')[0];
+            document.getElementById('messageInput').value = baseCommand + ' ';
+            document.getElementById('messageInput').focus();
+            hideCommandSuggestions();
+            
+            // If it's a command that requires no parameters, add a space for readiness
+            if (cmd.command === '/help' || cmd.command === '/clear' || cmd.command === '/party' || cmd.command === '/leave') {
+                document.getElementById('messageInput').value = baseCommand;
+            }
+        });
+        
+        // Simplified event handlers for hover
+        item.addEventListener('mouseover', function() {
+            const items = suggestionsContainer.querySelectorAll('.suggestion-item');
+            items.forEach((itm, idx) => {
+                if (itm === this) {
+                    currentSuggestionIndex = idx;
+                    itm.classList.add('selected');
+                } else {
+                    itm.classList.remove('selected');
+                }
+            });
+        });
+        
+        item.addEventListener('mouseout', function() {
+            // Only remove highlight if not actively selected by keyboard
+            if (!this.classList.contains('selected')) {
+                this.style.backgroundColor = 'transparent';
+            }
+        });
+        
+        suggestionsContainer.appendChild(item);
+    });
+    
+    // Automatically select the first item when suggestions are filtered
+    if (suggestionsContainer.children.length > 0) {
+        currentSuggestionIndex = 0;
+        suggestionsContainer.children[0].classList.add('selected');
+    }
+}
 
 function handleChatCommand(commandText) {
     const parts = commandText.trim().split(' ');

@@ -1,0 +1,87 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat App</title>
+    <link href="/WebSocketApp/css/main_page_style.css?v=<?php echo time(); ?>" rel="stylesheet" type="text/css"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet">
+</head>
+<body>
+    <header>
+        <h1><a href="index.php" style="text-decoration: none; color: black;">Wavey</a></h1>
+        <div id="side">
+            <div id="notificationContainer">
+                <!-- Panoul pentru notificări -->
+                <button id="notificationButton">🔔</button>
+                <div id="notificationDropdown" class="hidden">
+                    <div id="notificationList"></div>
+                </div>
+            </div>
+            <a href="profile.php" class="profile-btn">Profile</a>
+            <form class="logout-form" method="POST" action="" onsubmit="clearToken()">
+                <button type="submit" name="logout">Logout</button>
+            </form>
+        </div>
+    </header>
+    <div id="content">
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div id="createGroupContainer">
+                <button id="createGroupButton">Create Group</button>
+                <div id="groupForm" class="hidden">
+                    <h3>Create New Group</h3>
+                    <label for="groupName">Group Name:</label>
+                    <input type="text" id="groupName" placeholder="Enter group name">
+
+                    <div id="groupUserSearch">
+                        <input type="text" id="groupSearchInput" placeholder="Search users" oninput="searchInvitationUsers()">
+                        <div id="inviteUserList"></div>
+                    </div>
+                    <div id="selectedUsers">
+                        <h4>Selected Users</h4>
+                        <ul id="selectedUserList"></ul>
+                    </div>
+
+                    <button id="submitGroupButton">Create Group</button>
+                </div>
+            </div>
+            <div id="userSearch">
+                <input type="text" id="searchInput" placeholder="Search users">
+                <button onclick="searchUsers()">Search</button>
+                <div id="userList"></div>
+            </div>
+            <div id="recentConversations">
+                <h3>Conversații recente</h3>
+                <div id="conversationList"></div>
+            </div>
+        </div>
+        <!-- Main Chat Area -->
+        <div id="main">
+            <div id="conversation">
+                <div id="messages"></div>
+                <input type="file" id="fileInput" multiple style="display: none;" accept="image/*" onchange="previewSelectedImages(event)">
+                <div id="filePreview" style="margin-top: 10px;"></div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button onclick="document.getElementById('fileInput').click();" style="display: flex; align-items: center;">
+                        <span class="material-icons">attach_file</span>
+                    </button>
+                    <input type="text" id="messageInput" placeholder="Type a message" style="flex: 1; height: 40px; padding: 5px;">
+                    <button id="sendButton" onclick="sendMessage()" style="height: 40px;">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <a href="contact.php">Contact Us</a>
+            |
+            <a href="faq.php">FAQ</a>
+        </div>
+        <div class="footer-content">
+            &copy; 2025 Wavey
+        </div>
+    </footer>
+</body>
+</html>

@@ -166,11 +166,12 @@ header h1 a:hover {
 }
 
 #recentConversations {
-    max-height: 50%;
+
     overflow-y: auto;
     border: 1px solid #ccc;
     padding: 10px;
     margin-bottom: 5px;
+    height: 100%;
 }
 
 #recentConversations h3 {
@@ -181,6 +182,7 @@ header h1 a:hover {
 #conversationList {
     max-height: 300px;
     overflow-y: auto;
+    height: 100%; 
 }
 
 .conversation-item {
@@ -194,6 +196,23 @@ header h1 a:hover {
 
 .conversation-item:hover {
     background-color: var(--dark-blue);
+}
+
+#createGroupButton {
+    background-color: var(--orange);
+    color: white;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    width: 100%;
+    transition: background-color 0.3s;
+}
+
+#createGroupButton:hover {
+    background-color: #c15529;
 }
 
 #createGroupButton {
@@ -239,6 +258,13 @@ header h1 a:hover {
 
 #selectedUsers {
     margin-top: 1rem;
+    padding: 0.75rem;
+    background-color: rgba(167, 208, 221, 0.5); /* Light blue with opacity */
+    border-radius: 6px;
+    border: 1px solid var(--medium-blue);
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 #selectedUsers h4 {
@@ -246,9 +272,16 @@ header h1 a:hover {
     margin-bottom: 0.5rem;
 }
 
-#selectedUserList {
-    list-style-type: none;
-    padding-left: 0;
+#selectedUsers{
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--medium-blue);
+    border-radius: 6px;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    max-height: 150px;
+    overflow-y: auto;
 }
 
 #submitGroupButton {
@@ -320,6 +353,7 @@ header h1 a:hover {
     flex-direction: column;
     background-color: var(--cream);
     padding: 20px;
+
 }
 
 #conversation {
@@ -595,6 +629,25 @@ footer {
     display: none;
 }
 
+#GroupsettingsButton{
+    background-color: var(--orange);
+    color: white;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    width: 100%;
+    transition: background-color 0.3s;
+}
+
+#GroupsettingsButton:hover {
+    background-color: #c15529;
+}
+
+
+
 /* Popup content */
 #groupFormPopup {
     background-color: var(--cream);
@@ -663,29 +716,121 @@ footer {
     padding: 5px;
 }
 
-#inviteUserList div {
+/* New styles for invite user cards */
+#inviteUserList.search-results {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     padding: 8px;
-    border-bottom: 1px solid var(--light-blue);
+}
+
+.invite-user-card {
+    background-color: var(--white);
+    border: 1px solid var(--medium-blue);
+    border-radius: 5px;
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out, transform 0.1s ease;
+    font-size: 0.85rem;
+    color: var(--dark-blue);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    min-width: 80px; /* Ensure cards have a minimum width */
+    box-sizing: border-box;
+}
+
+.invite-user-card:hover {
+    border-color: var(--dark-blue);
+    background-color: var(--light-gray);
+    transform: translateY(-1px);
+}
+
+.invite-user-card.selected {
+    background-color: var(--medium-blue);
+    color: var(--white);
+    border-color: var(--dark-blue);
+    font-weight: bold;
+}
+
+/* Comment out or remove old #inviteUserList div styling that might conflict */
+/*
+#inviteUserList div {
+    padding: 0.6rem;
+    border-bottom: 1px solid var(--light-gray);
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
 }
 
 #inviteUserList div:last-child {
     border-bottom: none;
 }
 
-#selectedUserList {
-    list-style-type: none;
-    padding: 0;
+#inviteUserList div:hover {
+    background-color: var(--light-blue);
+    color: var(--dark-blue);
+}
+*/
+
+#inviteUserList div:hover {
+    background-color: var(--light-blue);
+    color: var(--dark-blue);
 }
 
-#selectedUserList li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px;
-    background-color: var(--light-blue);
-    margin-bottom: 5px;
-    border-radius: 4px;
+/* Selected Users Grid - New Styling */
+#selectedUsersContainer {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
 }
+
+#selectedUsersContainer h4 {
+    color: var(--dark-blue);
+    margin-bottom: 0.75rem;
+    font-size: 1rem; /* Ensure consistent heading size */
+}
+
+.selected-users-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Responsive columns */
+    gap: 0.75rem;
+    padding: 0.75rem; /* Padding inside the grid container */
+    background-color: var(--light-gray); /* Light background for the grid area */
+    border-radius: 6px;
+    border: 1px solid var(--gray); /* Border for the grid container */
+    min-height: 60px; /* Minimum height to be visible */
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.user-card {
+    background-color: var(--white);
+    border: 1px solid var(--medium-blue);
+    border-radius: 5px;
+    padding: 0.6rem;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease, box-shadow 0.2s ease-in-out;
+    font-size: 0.85rem; /* Slightly smaller font for cards */
+    color: var(--dark-blue);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: flex; /* For centering text if needed, or for an icon */
+    align-items: center;
+    justify-content: center;
+}
+
+.user-card:hover {
+    background-color: var(--light-blue);
+    border-color: var(--dark-blue);
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+/* Remove or comment out old #selectedUserList and related styles */
+/* #selectedUserList { ... } */
+/* #selectedUserList li { ... } */
+/* #selectedUserList .remove-user { ... } */
 
 #submitGroupButton {
     background-color: var(--orange);
@@ -701,4 +846,166 @@ footer {
 
 #submitGroupButton:hover {
     background-color: #c15529;
+}
+
+/* Group Settings Popup Styles */
+#groupSettingsPopup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#groupSettingsPopup .popup-container {
+    background-color: var(--cream);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    width: 400px;
+    max-width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: popup-fade-in 0.3s ease;
+}
+
+#groupSettingsPopup .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--light-blue);
+    background-color: var(--medium-blue);
+    color: white;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+#groupSettingsPopup .popup-content {
+    padding: 20px;
+}
+
+#groupSettingsPopup .popup-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 20px;
+    border-top: 1px solid var(--light-blue);
+    background-color: var(--cream);
+}
+
+#groupSettingsPopup .popup-footer button {
+    padding: 10px 15px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+}
+
+#groupSettingsPopup .leave-button {
+    background-color: #e74c3c;
+    color: white;
+}
+
+#groupSettingsPopup .leave-button:hover {
+    background-color: #c0392b;
+}
+
+#groupSettingsPopup .close-button {
+    background-color: var(--dark-blue);
+    color: white;
+}
+
+#groupSettingsPopup .close-button:hover {
+    background-color: #264659;
+}
+
+#groupSettingsPopup .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: var(--dark-blue);
+}
+
+#groupSettingsPopup .form-group input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid var(--light-blue);
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#groupSettingsPopup .members-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid var(--light-blue);
+    border-radius: 4px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+#groupSettingsPopup .members-list li {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--light-blue);
+    cursor: pointer;
+}
+
+#groupSettingsPopup .members-list li:hover {
+    background-color: var(--light-blue);
+}
+
+#groupSettingsPopup .search-container input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid var(--light-blue);
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#groupSettingsPopup .invite-button {
+    background-color: var(--orange);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    width: 100%;
+}
+
+#groupSettingsPopup .invite-button:hover {
+    background-color: #c15529;
+}
+
+#updateGroupNameButton  {
+    background-color: var(--orange);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    width: 100%;
+}
+
+#updateGroupNameButton:hover {
+    background-color: #c15529;
+}
+
+/* Animation for popup */
+@keyframes popup-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

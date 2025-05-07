@@ -44,6 +44,36 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
     <link href="/WebSocketApp/css/main_page_style.css?v=<?php echo time(); ?>" rel="stylesheet" type="text/css" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
         rel="stylesheet">
+    <style>
+        /* Command suggestion styles */
+        .command-suggestions {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Enhanced styling for keyboard-selected suggestion */
+        .suggestion-item.selected {
+            background-color: #325D75 !important;
+            color: white;
+            border-left: 4px solid #1A3E54;
+            padding-left: 8px !important;
+            font-weight: bold;
+        }
+
+        .suggestion-item.selected span {
+            color: white !important;
+        }
+    </style>
 </head>
 
 <body>
@@ -68,6 +98,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         <div id="leftside">
             <div id="sidebar">
                 <button id="createGroupButton">Create Group</button>
+                <button id="GroupsettingsButton">Settings</button>
                 <div id="userSearch">
                     <input type="text" id="searchInput" placeholder="Search users">
                     <button onclick="searchUsers()">Search</button>
@@ -162,17 +193,19 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
 
                 <div id="groupUserSearch">
                     <input type="text" id="groupSearchInput" placeholder="Search users" oninput="searchInvitationUsers()">
-                    <div id="inviteUserList"></div>
+                    <div id="inviteUserList" class="search-results"></div>
                 </div>
-                <div id="selectedUsers">
+                <div id="selectedUsersContainer">
                     <h4>Selected Users</h4>
-                    <ul id="selectedUserList"></ul>
+                    <div id="selectedUserList" class="selected-users-grid">
+                        <!-- User cards will be dynamically inserted here -->
+                    </div>
                 </div>
 
                 <button id="submitGroupButton">Create Group</button>
             </div>
         </div>
-
     </div>
 </body>
+
 </html>
