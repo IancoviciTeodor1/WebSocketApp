@@ -71,6 +71,26 @@ function displayMessage(message) {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
+function enableImagePopup() {
+    document.querySelectorAll('.message-file').forEach(img => {
+        img.addEventListener('click', () => {
+            const overlay = document.createElement('div');
+            overlay.classList.add('image-popup-overlay');
+
+            const popupImg = document.createElement('img');
+            popupImg.src = img.src;
+            popupImg.classList.add('image-popup');
+
+            overlay.appendChild(popupImg);
+            document.body.appendChild(overlay);
+
+            overlay.addEventListener('click', () => {
+                overlay.remove();
+            });
+        });
+    });
+}
+
 
 function removeMessage(messageId) {
     // Ștergerea mesajului
@@ -121,6 +141,7 @@ function loadMessages(conversationId) {
                 messages.forEach(message => {
                     displayMessage(message); // Afișăm fiecare mesaj existent
                 });
+                enableImagePopup();
 
                 console.log("Messages loaded:", messages); // Adaugă logul pentru debug
 
