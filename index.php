@@ -98,7 +98,7 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         <div id="leftside">
             <div id="sidebar">
                 <button id="createGroupButton">Create Group</button>
-                <button id="GroupsettingsButton">Settings</button>
+                <button id="GroupsettingsButton" style="display: none;">Settings</button>
                 <div id="userSearch">
                     <input type="text" id="searchInput" placeholder="Search users">
                     <button onclick="searchUsers()">Search</button>
@@ -124,11 +124,11 @@ $currentUsername = $_SESSION['username'] ?? null; // Sau cum este definit userna
         <!-- Main Chat Area -->
         <div id="main">
             <div id="conversation">
-                <button class="join" type="button" id="call-button" onclick="call()">Call</button>
                 <div id="messages"></div>
                 <input type="file" id="fileInput" multiple style="display: none;" accept="image/*" onchange="previewSelectedImages(event)">
                 <div id="filePreview" style="margin-top: 10px;"></div>
                 <div style="display: flex; align-items: center; gap: 10px; background-color:#325D75">
+                <button class="join" type="button" id="call-button" onclick="call()">Call</button>
                     <button onclick="document.getElementById('fileInput').click();" style="display: flex; align-items: center;">
                         <span class="material-icons">attach_file</span>
                     </button>
