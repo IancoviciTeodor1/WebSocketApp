@@ -10,7 +10,10 @@ const $self = {
   features: {
     audio: false,
     video: true,
+    screenSharing: false
   },
+  screenStream: null,
+  originalVideoTrack: null
 };
 
 const $peers = new Map();
@@ -34,6 +37,9 @@ document.querySelector('#call-button')
 
 document.querySelector('#footer')
   .addEventListener('click', handleMediaButtons);
+
+document.querySelector('#shareScreenBtn')
+  .addEventListener('click', handleScreenShare);
 
 
 requestUserMedia($self.mediaConstraints);
@@ -101,10 +107,6 @@ function toggleCam(button) {
   $self.features.video = enabled_state;
 
   button.setAttribute('aria-checked', enabled_state);
-
-  for (let id of $peers.keys()) {
-    shareFeatures(id, 'video');
-  }
 
   if (enabled_state) {
     $self.mediaStream.addTrack($self.mediaTracks.video);
@@ -320,6 +322,15 @@ function addFeaturesChannel(id) {
         }
       }
     },
+    screenSharing: function() {
+      const username = peer.features.username ? peer.features.username : id;
+      const fc = document.querySelector(`#peer-${id} figcaption`);
+      if (peer.features.screenSharing) {
+        fc.innerText = `${username} (Screen Sharing)`;
+      } else {
+        fc.innerText = peer.features.audio ? username : `${username} (Muted)`;
+      }
+    }
   };
 
 
@@ -560,4 +571,111 @@ function debounce(callback_function, wait_in_milliseconds) {
       () => callback_function.apply(context, args),
       wait_in_milliseconds);
   };
+}
+
+async function handleScreenShare() {
+  try {
+    if ($self.features.screenSharing) {
+      await stopScreenSharing();
+    } else {
+      await startScreenSharing();
+    }
+  } catch (err) {
+    console.error("Error handling screen share:", err);
+    $self.features.screenSharing = false;
+    document.querySelector('#shareScreenBtn').classList.remove('active');
+  }
+}
+
+async function startScreenSharing() {
+  try {
+    if ($self.screenStream) {
+      $self.screenStream.getTracks().forEach(track => track.stop());
+      $self.screenStream = null;
+    }
+
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: {
+        cursor: "always"
+      },
+      audio: false
+    });
+
+    if (!stream || !stream.getVideoTracks().length) {
+      throw new Error('No screen sharing stream obtained');
+    }
+
+    $self.screenStream = stream;
+    const screenTrack = stream.getVideoTracks()[0];
+    
+    if (!$self.originalVideoTrack && $self.mediaTracks.video) {
+      $self.originalVideoTrack = $self.mediaTracks.video;
+    }
+
+    if ($self.mediaTracks.video) {
+      $self.mediaStream.removeTrack($self.mediaTracks.video);
+    }
+    $self.mediaTracks.video = screenTrack;
+    $self.mediaStream.addTrack(screenTrack);
+    
+    document.querySelector('#shareScreenBtn').classList.add('active');
+    $self.features.screenSharing = true;
+    
+    for (let id of $peers.keys()) {
+      const peer = $peers.get(id);
+      const sender = peer.connection.getSenders().find(s => s.track?.kind === 'video');
+      if (sender) {
+        sender.replaceTrack(screenTrack);
+      }
+      shareFeatures(id, 'screenSharing');
+    }
+
+    screenTrack.onended = async () => {
+      await stopScreenSharing();
+    };
+
+    displayStream($self.mediaStream);
+  } catch (err) {
+    console.error("Error starting screen share:", err);
+    if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
+      $self.features.screenSharing = false;
+      document.querySelector('#shareScreenBtn').classList.remove('active');
+    }
+    throw err;
+  }
+}
+
+async function stopScreenSharing() {
+  try {
+    if ($self.screenStream) {
+      $self.screenStream.getTracks().forEach(track => track.stop());
+      $self.screenStream = null;
+    }
+
+    if ($self.originalVideoTrack) {
+      if ($self.mediaTracks.video) {
+        $self.mediaStream.removeTrack($self.mediaTracks.video);
+      }
+      $self.mediaTracks.video = $self.originalVideoTrack;
+      $self.mediaTracks.video.enabled = $self.features.video;
+      $self.mediaStream.addTrack($self.mediaTracks.video);
+    }
+
+    document.querySelector('#shareScreenBtn').classList.remove('active');
+    $self.features.screenSharing = false;
+
+    for (let id of $peers.keys()) {
+      const peer = $peers.get(id);
+      const sender = peer.connection.getSenders().find(s => s.track?.kind === 'video');
+      if (sender && $self.mediaTracks.video) {
+        sender.replaceTrack($self.mediaTracks.video);
+      }
+      shareFeatures(id, 'screenSharing');
+    }
+
+    displayStream($self.mediaStream);
+  } catch (err) {
+    console.error("Error stopping screen share:", err);
+    throw err;
+  }
 }
